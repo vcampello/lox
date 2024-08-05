@@ -26,13 +26,16 @@ func (i *Interpreter) RunPrompt() {
 		fmt.Print(prompt)
 
 		if line, err := reader.ReadString('\n'); err != nil {
+			// Exit
 			return
 		} else if line != "\n" {
 			i.Run(line)
 		}
+
+		i.hadError = false
 	}
 }
-func (i *Interpreter) RunFile(path string) {
+func (i Interpreter) RunFile(path string) {
 	bytes, err := os.ReadFile(path)
 
 	if err != nil {
@@ -42,12 +45,25 @@ func (i *Interpreter) RunFile(path string) {
 	source := string(bytes)
 	i.Run(source)
 
+	// Terminate
+	if i.hadError {
+		os.Exit(errors.EX_DATAERR)
+	}
 }
-func (*Interpreter) Run(source string) error {
+
+func (i Interpreter) Run(source string) error {
 	source = strings.TrimSpace(source)
 	scanner := scanner.NewScanner()
 	for tok := range scanner.ScanTokens(source) {
 		fmt.Println("token: ", tok)
 	}
 	return nil
+}
+func (i Interpreter) error(line int, message string) {
+	i.report(line, "", message)
+}
+
+func (i *Interpreter) report(line int, where string, message string) {
+	fmt.Printf("[line %d] Error %s: %s", line, where, message)
+	i.hadError = true
 }
