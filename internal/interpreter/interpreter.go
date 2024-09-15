@@ -54,7 +54,7 @@ func (i Interpreter) RunFile(path string) {
 func (i Interpreter) Run(source string) error {
 	source = strings.TrimSpace(source)
 	scanner := scanner.NewScanner()
-	for tok := range scanner.ScanTokens(source) {
+	for _, tok := range scanner.ScanTokens(source) {
 		fmt.Println("token: ", tok)
 	}
 	return nil
