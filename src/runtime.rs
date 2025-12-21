@@ -1,0 +1,42 @@
+use crate::scanner::Scanner;
+
+#[derive(Debug)]
+pub struct Runtime {
+    pub had_error: bool,
+}
+
+impl Default for Runtime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Runtime {
+    pub fn new() -> Self {
+        Self { had_error: false }
+    }
+
+    // TODO: accept a stream
+    pub fn run(&self, src: &str) {
+        println!("running...");
+        let mut scanner = Scanner::new();
+
+        for token in scanner.scan_tokens() {
+            println!("{token}");
+        }
+    }
+
+    fn error(&mut self, line: &u32, msg: &str) {
+        // I don't love this pattern but I don't know where the book wants to take it yet
+        self.report(line, "", msg);
+    }
+
+    fn report(&mut self, line: &u32, location: &str, msg: &str) {
+        eprintln!("[line {line}] error {location}: {msg}");
+        self.had_error = true;
+    }
+
+    pub fn clear_error_flag(&mut self) {
+        self.had_error = false;
+    }
+}
