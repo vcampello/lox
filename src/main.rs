@@ -33,7 +33,14 @@ fn run_prompt() {
         match stdin.read_line(&mut buf) {
             Ok(0) => break, // EOL
             Ok(_) => {
-                rtm.run(&buf);
+                let source = &buf.trim();
+
+                // no-op on  whitespace
+                if source.is_empty() {
+                    continue;
+                }
+
+                rtm.run(source);
                 rtm.clear_error_flag(); // don't kill the session
             }
             Err(e) => {
