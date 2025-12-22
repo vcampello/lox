@@ -105,3 +105,30 @@ impl fmt::Display for TokenType {
         write!(f, "{value}")
     }
 }
+
+pub struct Token {
+    token_type: TokenType,
+    lexeme: String,
+    // REFACTOR: this needs to be generic. Maybe the TokenType needs to have the payload?
+    // The book uses `Object literal` because it represents the value of the token - e.g. a number
+    // or string for a variable.
+    literal: String,
+    line: usize,
+}
+
+impl Token {
+    pub fn new(token_type: TokenType, lexeme: String, literal: String, line: usize) -> Self {
+        Self {
+            token_type,
+            lexeme,
+            literal,
+            line,
+        }
+    }
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)
+    }
+}

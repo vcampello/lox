@@ -33,7 +33,6 @@ fn run_prompt() {
         match stdin.read_line(&mut buf) {
             Ok(0) => break, // EOL
             Ok(_) => {
-                println!("Got: {buf}");
                 rtm.run(&buf);
                 rtm.clear_error_flag(); // don't kill the session
             }

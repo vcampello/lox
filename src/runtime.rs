@@ -18,8 +18,7 @@ impl Runtime {
 
     // TODO: accept a stream
     pub fn run(&self, src: &str) {
-        println!("running...");
-        let mut scanner = Scanner::new();
+        let mut scanner = Scanner::new(src);
 
         for token in scanner.scan_tokens() {
             println!("{token}");
@@ -32,6 +31,7 @@ impl Runtime {
     }
 
     fn report(&mut self, line: &u32, location: &str, msg: &str) {
+        // REFACTOR: there's some shared error handling between the scanner and the runtime
         eprintln!("[line {line}] error {location}: {msg}");
         self.had_error = true;
     }
