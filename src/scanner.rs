@@ -73,17 +73,17 @@ impl Scanner {
 
             // negation
             ('!', Some('=')) => {
-                self.add_token(TokenType::BangEqual);
                 // consume the next character
                 self.next_char();
+                self.add_token(TokenType::BangEqual);
             }
             ('!', _) => self.add_token(TokenType::Bang),
 
             // equality
             ('=', Some('=')) => {
-                self.add_token(TokenType::EqualEqual);
                 // consume the next character
                 self.next_char();
+                self.add_token(TokenType::EqualEqual);
             }
             ('=', _) => self.add_token(TokenType::Equal),
             // REFACTOR: there's some shared error handling between the scanner and the runtime
