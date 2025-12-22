@@ -2,6 +2,7 @@ use crate::token::{Token, TokenType};
 
 pub struct Scanner {
     tokens: Vec<Token>,
+    // TODO: convert to vec as nth is expensive
     source: String,
     // source.len() returns usize and these properties are derived from it
     /// Lexeme start
@@ -52,13 +53,13 @@ impl Scanner {
     }
 
     pub fn scan_token(&mut self) {
-        let Some(c) = self.advance() else { return };
+        let Some(c) = self.next_char() else { return };
 
         // REVIEW: use add_token for now, but we'll probably have to built the tokens here to
         // attach the literal value.
 
         // Look at the current and next character
-        match (c, self.peek()) {
+        match (c, self.peek_next()) {
             ('(', _) => self.add_token(TokenType::LeftParen),
             (')', _) => self.add_token(TokenType::RightParen),
             ('{', _) => self.add_token(TokenType::LeftBrace),
@@ -74,7 +75,7 @@ impl Scanner {
             ('!', Some('=')) => {
                 self.add_token(TokenType::BangEqual);
                 // consume the next character
-                self.advance();
+                self.next_char();
             }
             ('!', _) => self.add_token(TokenType::Bang),
 
@@ -82,7 +83,7 @@ impl Scanner {
             ('=', Some('=')) => {
                 self.add_token(TokenType::EqualEqual);
                 // consume the next character
-                self.advance();
+                self.next_char();
             }
             ('=', _) => self.add_token(TokenType::Equal),
             // REFACTOR: there's some shared error handling between the scanner and the runtime
@@ -90,7 +91,8 @@ impl Scanner {
         };
     }
 
-    pub fn advance(&mut self) -> Option<char> {
+    // called `advance` in the book
+    pub fn next_char(&mut self) -> Option<char> {
         // REVIEW:
         // this is required because we only want to look at one character at a time. Perhaps
         // there's a better way to do it.
@@ -103,10 +105,8 @@ impl Scanner {
         c
     }
 
-    pub fn peek(&self) -> Option<char> {
-        // REVIEW:
-        // this is required because we only want to look at one character at a time. Perhaps
-        // there's a better way to do it.
-        self.source.chars().nth(self.current + 1)
+    // called `peek` in the book
+    pub fn peek_next(&self) -> Option<char> {
+        self.source.chars().nth(self.current)
     }
 }
