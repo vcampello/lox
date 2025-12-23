@@ -35,6 +35,11 @@ impl Scanner {
         self.tokens.push(token);
     }
 
+    fn add_token_and_skip(&mut self, token_type: TokenType, skip_chars: usize) {
+        self.add_token(token_type);
+        self.current += skip_chars;
+    }
+
     pub fn scan_tokens(&mut self) -> &Vec<Token> {
         // TODO: would it be better to use an iterator?
         while !self.is_at_end() {
@@ -52,7 +57,7 @@ impl Scanner {
         &self.tokens
     }
 
-    pub fn scan_token(&mut self) {
+    fn scan_token(&mut self) {
         let Some(c) = self.next_char() else { return };
 
         // REVIEW: use add_token for now, but we'll probably have to built the tokens here to
@@ -72,47 +77,23 @@ impl Scanner {
             ('*', _) => self.add_token(TokenType::Star),
 
             // negation
-            ('!', Some('=')) => {
-                // consume the next character
-                self.next_char();
-                self.add_token(TokenType::BangEqual);
-            }
+            ('!', Some('=')) => self.add_token_and_skip(TokenType::BangEqual, 1),
             ('!', _) => self.add_token(TokenType::Bang),
 
             // equality
-            ('=', Some('=')) => {
-                // consume the next character
-                self.next_char();
-                self.add_token(TokenType::EqualEqual);
-            }
+            ('=', Some('=')) => self.add_token_and_skip(TokenType::EqualEqual, 1),
             ('=', _) => self.add_token(TokenType::Equal),
 
             // greater than
-            ('>', Some('=')) => {
-                // consume the next character
-                self.next_char();
-                self.add_token(TokenType::GreaterEqual);
-            }
+            ('>', Some('=')) => self.add_token_and_skip(TokenType::GreaterEqual, 1),
             ('>', _) => self.add_token(TokenType::Greater),
+
             // greater than
-            ('<', Some('=')) => {
-                // consume the next character
-                self.next_char();
-                self.add_token(TokenType::LessEqual);
-            }
+            ('<', Some('=')) => self.add_token_and_skip(TokenType::LessEqual, 1),
             ('<', _) => self.add_token(TokenType::Less),
 
             // slash or comment
-            ('/', Some('/')) => {
-                // consume the next character
-                while let Some(c) = self.next_char()
-                    && !self.is_at_end()
-                {
-                    if c == '\n' {
-                        break;
-                    }
-                }
-            }
+            ('/', Some('/')) => self.handle_strip_comment(),
             ('/', _) => self.add_token(TokenType::Slash),
 
             // whitespace
@@ -129,7 +110,7 @@ impl Scanner {
     }
 
     // called `advance` in the book
-    pub fn next_char(&mut self) -> Option<char> {
+    fn next_char(&mut self) -> Option<char> {
         // REVIEW:
         // this is required because we only want to look at one character at a time. Perhaps
         // there's a better way to do it.
@@ -143,7 +124,21 @@ impl Scanner {
     }
 
     // called `peek` in the book
-    pub fn peek_next(&self) -> Option<char> {
+    fn peek_next(&self) -> Option<char> {
         self.source.chars().nth(self.current)
+    }
+
+    fn handle_strip_comment(&mut self) {
+        // consume the next character
+        while let Some(c) = self.next_char()
+            && !self.is_at_end()
+        {
+            if c == '\n' {
+                break;
+            }
+        }
+    }
+    fn handle_string(&mut self) {
+        //
     }
 }
