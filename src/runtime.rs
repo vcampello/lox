@@ -32,7 +32,7 @@ impl Runtime {
 
     fn report(&mut self, line: &u32, location: &str, msg: &str) {
         // REFACTOR: there's some shared error handling between the scanner and the runtime
-        eprintln!("[line {line}] error {location}: {msg}");
+        eprintln!(" {line} | Error {location}: {msg}");
         self.had_error = true;
     }
 

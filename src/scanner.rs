@@ -105,7 +105,7 @@ impl Scanner {
             }
 
             // REFACTOR: there's some shared error handling between the scanner and the runtime
-            (token, _) => eprintln!("[line {}] Unknown token: {token}", self.line),
+            (token, _) => eprintln!(" {} | Unknown token: {token}", self.line),
         };
     }
 
