@@ -104,7 +104,7 @@ impl Scanner {
             ('"', _) => self.handle_string(),
 
             // REFACTOR: there's some shared error handling between the scanner and the runtime
-            (token, _) => eprintln!(" {} | Unknown token: {token}", self.line),
+            (token, _) => eprintln!(" {}| Unknown token: {token}", self.line),
         };
     }
 
@@ -138,12 +138,23 @@ impl Scanner {
         }
     }
     fn handle_string(&mut self) {
-        println!("TODO: handle string");
-        let literal = String::new();
-        self.tokens.push(Token::new(
-            TokenType::String(literal),
-            String::new(),
-            self.line,
-        ));
+        while let Some(c) = self.peek()
+            && !self.is_at_end()
+        {
+            match c {
+                // Multi-line comment
+                '\n' => self.line += 1,
+                '"' => break,
+                _ => (),
+            };
+            _ = self.advance();
+        }
+
+        // consume closing "
+        _ = self.advance();
+
+        let literal = &self.source[self.start + 1..self.current - 1];
+
+        self.add_token(TokenType::String(literal.to_string()));
     }
 }
