@@ -10,12 +10,12 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     dbg!(&args);
     match args.len() {
-        1 => run_file(&args[0]),
-        x if x > 2 => {
+        1 => run_prompt(),
+        2 => run_file(&args[1]),
+        _ => {
             println!("Usage: lox [script]");
             process::exit(54)
         }
-        _ => run_prompt(),
     }
 }
 
