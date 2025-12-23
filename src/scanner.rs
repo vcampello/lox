@@ -115,6 +115,14 @@ impl Scanner {
             }
             ('/', _) => self.add_token(TokenType::Slash),
 
+            // whitespace
+            (' ', _) => (),
+            ('\t', _) => (),
+            ('\r', _) => (),
+            ('\n', _) => {
+                self.line += 1;
+            }
+
             // REFACTOR: there's some shared error handling between the scanner and the runtime
             (token, _) => eprintln!("[line {}] Unknown token: {token}", self.line),
         };

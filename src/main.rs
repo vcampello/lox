@@ -55,7 +55,6 @@ fn run_prompt() {
 }
 
 fn run_file(path: &str) {
-    println!("Loading ${path}");
     let rtm = Runtime::new();
 
     // REFACTOR: let errors bubble up to the caller
