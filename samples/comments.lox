@@ -1,0 +1,6 @@
+var a = 1;
+// a comment
+
+b == c;
+
+a >= b;

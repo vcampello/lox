@@ -86,6 +86,35 @@ impl Scanner {
                 self.add_token(TokenType::EqualEqual);
             }
             ('=', _) => self.add_token(TokenType::Equal),
+
+            // greater than
+            ('>', Some('=')) => {
+                // consume the next character
+                self.next_char();
+                self.add_token(TokenType::GreaterEqual);
+            }
+            ('>', _) => self.add_token(TokenType::Greater),
+            // greater than
+            ('<', Some('=')) => {
+                // consume the next character
+                self.next_char();
+                self.add_token(TokenType::LessEqual);
+            }
+            ('<', _) => self.add_token(TokenType::Less),
+
+            // slash or comment
+            ('/', Some('/')) => {
+                // consume the next character
+                while let Some(c) = self.next_char()
+                    && !self.is_at_end()
+                {
+                    if c == '\n' {
+                        break;
+                    }
+                }
+            }
+            ('/', _) => self.add_token(TokenType::Slash),
+
             // REFACTOR: there's some shared error handling between the scanner and the runtime
             (token, _) => eprintln!("[line {}] Unknown token: {token}", self.line),
         };
