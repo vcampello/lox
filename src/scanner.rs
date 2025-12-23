@@ -31,7 +31,7 @@ impl Scanner {
 
     fn add_token(&mut self, token_type: TokenType) {
         let lexeme = &self.source[self.start..self.current];
-        let token = Token::new(token_type, lexeme.into(), String::new(), self.line);
+        let token = Token::new(token_type, lexeme.into(), self.line);
         self.tokens.push(token);
     }
 
@@ -47,12 +47,8 @@ impl Scanner {
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(
-            TokenType::Eof,
-            String::new(),
-            String::new(),
-            self.line,
-        ));
+        self.tokens
+            .push(Token::new(TokenType::Eof, String::new(), self.line));
 
         &self.tokens
     }
@@ -104,6 +100,9 @@ impl Scanner {
                 self.line += 1;
             }
 
+            // literals
+            ('"', _) => self.handle_string(),
+
             // REFACTOR: there's some shared error handling between the scanner and the runtime
             (token, _) => eprintln!(" {} | Unknown token: {token}", self.line),
         };
@@ -139,6 +138,12 @@ impl Scanner {
         }
     }
     fn handle_string(&mut self) {
-        //
+        println!("TODO: handle string");
+        let literal = String::new();
+        self.tokens.push(Token::new(
+            TokenType::String(literal),
+            String::new(),
+            self.line,
+        ));
     }
 }

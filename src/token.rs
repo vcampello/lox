@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(Debug, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -26,7 +27,7 @@ pub enum TokenType {
 
     // Literals.
     Identifier,
-    String,
+    String(String),
     Number,
 
     // Keywords.
@@ -52,7 +53,7 @@ pub enum TokenType {
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = match *self {
+        let value = match self {
             // Single-character tokens.
             TokenType::LeftParen => "LeftParen",
             TokenType::RightParen => "RightParen",
@@ -78,7 +79,7 @@ impl fmt::Display for TokenType {
 
             // Literals.
             TokenType::Identifier => "Identifier",
-            TokenType::String => "String",
+            TokenType::String(s) => &format!("String => {}", &s),
             TokenType::Number => "Number",
 
             // Keywords.
@@ -112,16 +113,14 @@ pub struct Token {
     // REFACTOR: this needs to be generic. Maybe the TokenType needs to have the payload?
     // The book uses `Object literal` because it represents the value of the token - e.g. a number
     // or string for a variable.
-    literal: String,
     line: usize,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: String, line: usize) -> Self {
+    pub fn new(token_type: TokenType, lexeme: String, line: usize) -> Self {
         Self {
             token_type,
             lexeme,
-            literal,
             line,
         }
     }
@@ -129,10 +128,6 @@ impl Token {
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            " {} | {} {} {}",
-            self.line, self.token_type, self.lexeme, self.literal
-        )
+        write!(f, " {} | {} {}", self.line, self.token_type, self.lexeme)
     }
 }
