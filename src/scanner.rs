@@ -54,13 +54,13 @@ impl Scanner {
     }
 
     fn scan_token(&mut self) {
-        let Some(c) = self.next_char() else { return };
+        let Some(c) = self.advance() else { return };
 
         // REVIEW: use add_token for now, but we'll probably have to built the tokens here to
         // attach the literal value.
 
         // Look at the current and next character
-        match (c, self.peek_next()) {
+        match (c, self.peek()) {
             ('(', _) => self.add_token(TokenType::LeftParen),
             (')', _) => self.add_token(TokenType::RightParen),
             ('{', _) => self.add_token(TokenType::LeftBrace),
@@ -108,8 +108,8 @@ impl Scanner {
         };
     }
 
-    // called `advance` in the book
-    fn next_char(&mut self) -> Option<char> {
+    /// Consume current character
+    fn advance(&mut self) -> Option<char> {
         // REVIEW:
         // this is required because we only want to look at one character at a time. Perhaps
         // there's a better way to do it.
@@ -122,14 +122,14 @@ impl Scanner {
         c
     }
 
-    // called `peek` in the book
-    fn peek_next(&self) -> Option<char> {
+    /// Peek at the character returned by `advance`
+    fn peek(&self) -> Option<char> {
         self.source.chars().nth(self.current)
     }
 
     fn handle_strip_comment(&mut self) {
         // consume the next character
-        while let Some(c) = self.next_char()
+        while let Some(c) = self.advance()
             && !self.is_at_end()
         {
             if c == '\n' {
