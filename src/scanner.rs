@@ -102,7 +102,8 @@ impl Scanner {
 
             // literals
             ('"', _) => self.handle_string(),
-            ('0'..='9', _) => self.handle_number(),
+            (c, _) if c.is_ascii_digit() => self.handle_number(),
+            (c, _) if Scanner::is_identifier(&c) => self.handle_identifier_and_keywords(),
 
             // REFACTOR: there's some shared error handling between the scanner and the runtime
             (token, _) => eprintln!(" {}| Unknown token: {token}", self.line),
@@ -134,6 +135,12 @@ impl Scanner {
         match index > self.source.len() {
             true => None,
             false => self.source.chars().nth(index),
+        }
+    }
+
+    fn consume_digits(&mut self) {
+        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+            self.advance();
         }
     }
 
@@ -199,9 +206,24 @@ impl Scanner {
         self.add_token(TokenType::Number(number));
     }
 
-    fn consume_digits(&mut self) {
-        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+    fn handle_identifier_and_keywords(&mut self) {
+        // extract the entire identifier before categorising it. See maximal munch
+        while matches!(self.peek(), Some(c) if Scanner::is_identifier(&c)) {
             self.advance();
         }
+
+        let identifier = &self.source[self.start..self.current];
+
+        // Check if it's a reserved keyword
+        let token_type = match TokenType::matching_identifier(identifier) {
+            Some(t) => t,
+            _ => TokenType::Identifier,
+        };
+
+        self.add_token(token_type);
+    }
+
+    fn is_identifier(c: &char) -> bool {
+        c.is_ascii_alphanumeric() || *c == '_'
     }
 }

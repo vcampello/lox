@@ -51,6 +51,33 @@ pub enum TokenType {
     Eof,
 }
 
+impl TokenType {
+    pub fn matching_identifier(identifier: &str) -> Option<TokenType> {
+        match identifier {
+            // Keywords.
+            "and" => Some(TokenType::And),
+            "class" => Some(TokenType::Class),
+            "else" => Some(TokenType::Else),
+            "false" => Some(TokenType::False),
+            "fun" => Some(TokenType::Fun),
+            "for" => Some(TokenType::For),
+            "if" => Some(TokenType::If),
+            "nil" => Some(TokenType::Nil),
+            "or" => Some(TokenType::Or),
+            "print" => Some(TokenType::Print),
+            "return" => Some(TokenType::Return),
+            "super" => Some(TokenType::Super),
+            "this" => Some(TokenType::This),
+            "true" => Some(TokenType::True),
+            "var" => Some(TokenType::Var),
+            "while" => Some(TokenType::While),
+
+            // Not an identifier
+            _ => None,
+        }
+    }
+}
+
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let value = match self {
