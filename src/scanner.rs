@@ -102,6 +102,7 @@ impl Scanner {
 
             // literals
             ('"', _) => self.handle_string(),
+            ('0'..='9', _) => self.handle_number(),
 
             // REFACTOR: there's some shared error handling between the scanner and the runtime
             (token, _) => eprintln!(" {}| Unknown token: {token}", self.line),
@@ -127,6 +128,15 @@ impl Scanner {
         self.source.chars().nth(self.current)
     }
 
+    /// Peek at the next character returned by `advance`
+    fn peek_next(&self) -> Option<char> {
+        let index = self.current + 1;
+        match index > self.source.len() {
+            true => None,
+            false => self.source.chars().nth(index),
+        }
+    }
+
     fn handle_strip_comment(&mut self) {
         // consume the next character
         while let Some(c) = self.advance()
@@ -137,6 +147,7 @@ impl Scanner {
             }
         }
     }
+
     fn handle_string(&mut self) {
         while let Some(c) = self.peek()
             && !self.is_at_end()
@@ -151,6 +162,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
+            // REFACTOR: search for eprintln in this file and consolidate them
             eprintln!(" {}| Unterminated string.", self.line);
             return;
         }
@@ -161,5 +173,35 @@ impl Scanner {
         let literal = &self.source[self.start + 1..self.current - 1];
 
         self.add_token(TokenType::String(literal.to_string()));
+    }
+
+    fn handle_number(&mut self) {
+        // consume whole number
+        self.consume_digits();
+
+        // check if the current and next characters are the fractional part of a number -e.g. `.9`
+        match (self.peek(), self.peek_next()) {
+            (Some(c), Some(next)) if c == '.' && next.is_ascii_digit() => {
+                // consume '.'
+                self.advance();
+
+                // consume fractional
+                self.consume_digits();
+            }
+            _ => (),
+        };
+
+        let literal = &self.source[self.start..self.current];
+        let Ok(number) = literal.parse::<f64>() else {
+            eprintln!(" {}| failed to parse.", self.line);
+            return;
+        };
+        self.add_token(TokenType::Number(number));
+    }
+
+    fn consume_digits(&mut self) {
+        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+            self.advance();
+        }
     }
 }

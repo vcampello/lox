@@ -28,7 +28,7 @@ pub enum TokenType {
     // Literals.
     Identifier,
     String(String),
-    Number,
+    Number(f64),
 
     // Keywords.
     And,
@@ -79,8 +79,8 @@ impl fmt::Display for TokenType {
 
             // Literals.
             TokenType::Identifier => "Identifier",
-            TokenType::String(s) => &format!("String => {}", &s),
-            TokenType::Number => "Number",
+            TokenType::String(v) => &format!("String({})", &v),
+            TokenType::Number(v) => &format!("Number({})", &v),
 
             // Keywords.
             TokenType::And => "And",
@@ -128,6 +128,6 @@ impl Token {
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, " {}| {} {}", self.line, self.token_type, self.lexeme)
+        write!(f, " {}| {}", self.line, self.token_type)
     }
 }
