@@ -89,7 +89,7 @@ impl Scanner {
             ('<', _) => self.add_token(TokenType::Less),
 
             // slash or comment
-            ('/', Some('/')) => self.handle_strip_comment(),
+            ('/', Some('/')) => self.handle_comment(),
             ('/', _) => self.add_token(TokenType::Slash),
 
             // whitespace
@@ -137,7 +137,7 @@ impl Scanner {
         }
     }
 
-    fn handle_strip_comment(&mut self) {
+    fn handle_comment(&mut self) {
         // consume the next character
         while let Some(c) = self.advance()
             && !self.is_at_end()
