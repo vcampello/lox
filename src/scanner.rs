@@ -150,6 +150,11 @@ impl Scanner {
             _ = self.advance();
         }
 
+        if self.is_at_end() {
+            eprintln!(" {}| Unterminated string.", self.line);
+            return;
+        }
+
         // consume closing "
         _ = self.advance();
 
