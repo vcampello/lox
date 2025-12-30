@@ -66,7 +66,7 @@ impl Expr {
                 format!("{value}")
             }
             Expr::Grouping { expr } => {
-                format!("({})", Expr::print(expr))
+                format!("(group {})", Expr::print(expr))
             }
         }
     }
@@ -124,6 +124,31 @@ mod tests {
             expr: Box::new(literal),
         };
         let result = Expr::print(&e);
-        assert_eq!(result, "(1)")
+        assert_eq!(result, "(group 1)")
+    }
+
+    #[test]
+    fn nested() {
+        let left = Box::new(Expr::Unary {
+            operator: Token::new(TokenType::Minus, "-".to_string(), 1),
+            right: Box::new(Expr::Literal {
+                value: LiteralValue::Number(123.0),
+            }),
+        });
+        let right = Box::new(Expr::Grouping {
+            expr: Box::new(Expr::Literal {
+                value: LiteralValue::Number(45.67),
+            }),
+        });
+
+        let operator = Token::new(TokenType::Star, "*".to_string(), 1);
+
+        let e = Expr::Binary {
+            left,
+            operator,
+            right,
+        };
+        let result = Expr::print(&e);
+        assert_eq!(result, "(* (- 123) (group 45.67))")
     }
 }
