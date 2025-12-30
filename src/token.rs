@@ -26,7 +26,7 @@ pub enum TokenType {
     LessEqual,
 
     // Literals.
-    Identifier,
+    Identifier(String),
     String(String),
     Number(f64),
 
@@ -105,7 +105,7 @@ impl fmt::Display for TokenType {
             TokenType::LessEqual => write!(f, "LessEqual"),
 
             // Literals.
-            TokenType::Identifier => write!(f, "Identifier"),
+            TokenType::Identifier(v) => write!(f, "Identifier({v})"),
             TokenType::String(v) => write!(f, "String({v})"),
             TokenType::Number(v) => write!(f, "Number({v})"),
 
@@ -132,13 +132,15 @@ impl fmt::Display for TokenType {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: String,
+    pub token_type: TokenType,
+    pub lexeme: String,
     // REFACTOR: this needs to be generic. Maybe the TokenType needs to have the payload?
     // The book uses `Object literal` because it represents the value of the token - e.g. a number
     // or string for a variable.
-    line: usize,
+    pub line: usize,
+    // TODO: add column num
 }
 
 impl Token {

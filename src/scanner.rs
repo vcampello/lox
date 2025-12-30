@@ -217,7 +217,7 @@ impl Scanner {
         // Check if it's a reserved keyword
         let token_type = match TokenType::matching_identifier(identifier) {
             Some(t) => t,
-            _ => TokenType::Identifier,
+            _ => TokenType::Identifier(identifier.to_string()),
         };
 
         self.add_token(token_type);

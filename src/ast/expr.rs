@@ -7,60 +7,123 @@ pub enum LiteralValue {
     String(String),
     Number(f64),
     Bool(bool),
-    Nil,
+    Nil, // REVIEW: should this be Nil(None)?
 }
 
 impl fmt::Display for LiteralValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             // Literals.
-            LiteralValue::String(v) => write!(f, "String({v})"),
-            LiteralValue::Number(v) => write!(f, "Number({v})"),
-            LiteralValue::Bool(v) => write!(f, "Bool({v})"),
-            LiteralValue::Nil => write!(f, "Nil"),
+            LiteralValue::String(v) => write!(f, "{v}"),
+            LiteralValue::Number(v) => write!(f, "{v}"),
+            LiteralValue::Bool(v) => write!(f, "{v}"),
+            LiteralValue::Nil => write!(f, "nil"),
         }
     }
 }
 
-pub struct UnaryExpr {
-    operator: Token,
-    right: Box<Expr>,
-}
-pub struct BinaryExpr {
-    left: Box<Expr>,
-    operator: Token,
-    right: Box<Expr>,
-}
-
-pub struct LiteralExpr {
-    // This cannot be Token because it needs to be a subset which has literal values
-    value: LiteralValue,
-}
-pub struct GroupingExpr {
-    expr: Box<Expr>,
-}
-
-pub trait Visitor<T> {
-    fn visit_unary_expr(&self, expr: &UnaryExpr) -> T;
-    fn visit_binary_expr(&self, expr: &BinaryExpr) -> T;
-    fn visit_literal_expr(&self, expr: &LiteralExpr) -> T;
-    fn visit_grouping_expr(&self, expr: &GroupingExpr) -> T;
-}
-
+#[derive(Debug, Clone)]
 pub enum Expr {
-    Unary(UnaryExpr),
-    Binary(BinaryExpr),
-    Literal(LiteralExpr),
-    Grouping(GroupingExpr),
+    Unary {
+        operator: Token,
+        right: Box<Expr>,
+    },
+    Binary {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
+    Literal {
+        // This cannot be Token because it needs to be a subset which has literal values
+        value: LiteralValue,
+    },
+    Grouping {
+        expr: Box<Expr>,
+    },
 }
 
+// REVIEW: this could be a trait and then there could be an AST printer
 impl Expr {
-    fn accept<V: Visitor<Self>>(&self, visitor: &V) -> Self {
-        match self {
-            Expr::Unary(e) => visitor.visit_unary_expr(e),
-            Expr::Binary(e) => visitor.visit_binary_expr(e),
-            Expr::Grouping(e) => visitor.visit_grouping_expr(e),
-            Expr::Literal(e) => visitor.visit_literal_expr(e),
+    // NOTE: I'll see how far I can get without the visitor pattern suggested in the book
+    fn print(e: &Expr) -> String {
+        match e {
+            Expr::Unary { operator, right } => {
+                format!("({} {})", operator.lexeme, Expr::print(right))
+            }
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => {
+                format!(
+                    "({} {} {})",
+                    operator.lexeme,
+                    Expr::print(left),
+                    Expr::print(right)
+                )
+            }
+            Expr::Literal { value } => {
+                format!("{value}")
+            }
+            Expr::Grouping { expr } => {
+                format!("({})", Expr::print(expr))
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::token::*;
+
+    #[test]
+    fn unary() {
+        let operator = Token::new(TokenType::Minus, String::from("-"), 1);
+        let literal = Expr::Literal {
+            value: LiteralValue::Number(1.0),
+        };
+        let e = Expr::Unary {
+            operator,
+            right: Box::new(literal),
+        };
+        let result = Expr::print(&e);
+        assert_eq!(result, "(- 1)")
+    }
+
+    #[test]
+    fn binary() {
+        let operator = Token::new(TokenType::Minus, String::from("-"), 1);
+        let literal = Expr::Literal {
+            value: LiteralValue::Number(1.0),
+        };
+        let e = Expr::Binary {
+            left: Box::new(literal.clone()),
+            operator,
+            right: Box::new(literal),
+        };
+        let result = Expr::print(&e);
+        assert_eq!(result, "(- 1 1)")
+    }
+
+    #[test]
+    fn literal() {
+        let literal = Expr::Literal {
+            value: LiteralValue::Number(1.0),
+        };
+        let result = Expr::print(&literal);
+        assert_eq!(result, "1")
+    }
+
+    #[test]
+    fn grouping() {
+        let literal = Expr::Literal {
+            value: LiteralValue::Number(1.0),
+        };
+        let e = Expr::Grouping {
+            expr: Box::new(literal),
+        };
+        let result = Expr::print(&e);
+        assert_eq!(result, "(1)")
     }
 }
