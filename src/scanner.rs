@@ -1,122 +1,129 @@
+use std::{iter::Peekable, str::Chars};
+
 use crate::token::{Token, TokenType};
 
-pub struct Scanner {
+pub struct Scanner<'a> {
     tokens: Vec<Token>,
     // TODO: convert to vec as nth is expensive
-    source: String,
+    source: &'a str,
+
+    /// A shared iterator over the source
+    ///
+    /// This iterator will always return None after it's exhausted. This is not always the case
+    /// for other types:
+    /// - https://doc.rust-lang.org/std/iter/trait.Iterator.html#tymethod.next
+    /// - https://doc.rust-lang.org/std/iter/trait.FusedIterator.html
+    chars: Peekable<Chars<'a>>,
+
     // source.len() returns usize and these properties are derived from it
     /// Lexeme start
     start: usize, // start
+
     /// Current character position in the source code
     current: usize,
+
     /// Current line in the source code
     line: usize,
 }
 
-impl Scanner {
+impl<'a> Scanner<'a> {
     // TODO: accept a stream
-    pub fn new(source: &str) -> Self {
+    pub fn new(source: &'a str) -> Self {
         Self {
             tokens: Vec::new(),
-            source: source.to_string(),
+            source,
+            chars: source.chars().peekable(),
             start: 0,
             current: 0,
             line: 1,
         }
     }
 
-    fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
-    }
-
-    fn add_token(&mut self, token_type: TokenType) {
-        let lexeme = &self.source[self.start..self.current];
-        let token = Token::new(token_type, lexeme.into(), self.line);
-        self.tokens.push(token);
-    }
-
-    fn add_token_and_skip(&mut self, token_type: TokenType, skip_chars: usize) {
-        self.add_token(token_type);
-        self.current += skip_chars;
-    }
-
     pub fn scan_tokens(&mut self) -> &Vec<Token> {
-        // TODO: would it be better to use an iterator?
-        while !self.is_at_end() {
+        // scan each character
+        while let Some(char) = self.advance() {
+            // Look at the current and next character
+            match (char, self.chars.peek()) {
+                ('(', _) => self.add_token(TokenType::LeftParen),
+                (')', _) => self.add_token(TokenType::RightParen),
+                ('{', _) => self.add_token(TokenType::LeftBrace),
+                ('}', _) => self.add_token(TokenType::RightBrace),
+                (',', _) => self.add_token(TokenType::Comma),
+                ('.', _) => self.add_token(TokenType::Dot),
+                ('-', _) => self.add_token(TokenType::Minus),
+                ('+', _) => self.add_token(TokenType::Plus),
+                (';', _) => self.add_token(TokenType::Semicolon),
+                ('*', _) => self.add_token(TokenType::Star),
+
+                // negation
+                ('!', Some('=')) => self.add_token_and_skip(TokenType::BangEqual, 1),
+                ('!', _) => self.add_token(TokenType::Bang),
+
+                // equality
+                ('=', Some('=')) => self.add_token_and_skip(TokenType::EqualEqual, 1),
+                ('=', _) => self.add_token(TokenType::Equal),
+
+                // greater than
+                ('>', Some('=')) => self.add_token_and_skip(TokenType::GreaterEqual, 1),
+                ('>', _) => self.add_token(TokenType::Greater),
+
+                // greater than
+                ('<', Some('=')) => self.add_token_and_skip(TokenType::LessEqual, 1),
+                ('<', _) => self.add_token(TokenType::Less),
+
+                // slash or comment
+                ('/', Some('/')) => self.handle_comment(),
+                ('/', _) => self.add_token(TokenType::Slash),
+
+                // whitespace
+                (' ', _) => (),
+                ('\t', _) => (),
+                ('\r', _) => (),
+                ('\n', _) => {
+                    self.line += 1;
+                }
+
+                // literals
+                ('"', _) => self.handle_string(),
+                (char, _) if char.is_ascii_digit() => self.handle_number(),
+                (char, _) if Scanner::is_identifier(&char) => self.handle_identifier_and_keywords(),
+
+                // REFACTOR: there's some shared error handling between the scanner and the runtime
+                (token, _) => eprintln!(" {}| Unknown token: {token}", self.line),
+            };
+
+            // set lexeme start
             self.start = self.current;
-            self.scan_token();
         }
 
+        // TODO: completely remove Eof once the book explains why it needs it
+        // Terminate the program
         self.tokens
             .push(Token::new(TokenType::Eof, String::new(), self.line));
 
         &self.tokens
     }
 
-    fn scan_token(&mut self) {
-        let Some(c) = self.advance() else { return };
-
-        // REVIEW: use add_token for now, but we'll probably have to built the tokens here to
-        // attach the literal value.
-
-        // Look at the current and next character
-        match (c, self.peek()) {
-            ('(', _) => self.add_token(TokenType::LeftParen),
-            (')', _) => self.add_token(TokenType::RightParen),
-            ('{', _) => self.add_token(TokenType::LeftBrace),
-            ('}', _) => self.add_token(TokenType::RightBrace),
-            (',', _) => self.add_token(TokenType::Comma),
-            ('.', _) => self.add_token(TokenType::Dot),
-            ('-', _) => self.add_token(TokenType::Minus),
-            ('+', _) => self.add_token(TokenType::Plus),
-            (';', _) => self.add_token(TokenType::Semicolon),
-            ('*', _) => self.add_token(TokenType::Star),
-
-            // negation
-            ('!', Some('=')) => self.add_token_and_skip(TokenType::BangEqual, 1),
-            ('!', _) => self.add_token(TokenType::Bang),
-
-            // equality
-            ('=', Some('=')) => self.add_token_and_skip(TokenType::EqualEqual, 1),
-            ('=', _) => self.add_token(TokenType::Equal),
-
-            // greater than
-            ('>', Some('=')) => self.add_token_and_skip(TokenType::GreaterEqual, 1),
-            ('>', _) => self.add_token(TokenType::Greater),
-
-            // greater than
-            ('<', Some('=')) => self.add_token_and_skip(TokenType::LessEqual, 1),
-            ('<', _) => self.add_token(TokenType::Less),
-
-            // slash or comment
-            ('/', Some('/')) => self.handle_comment(),
-            ('/', _) => self.add_token(TokenType::Slash),
-
-            // whitespace
-            (' ', _) => (),
-            ('\t', _) => (),
-            ('\r', _) => (),
-            ('\n', _) => {
-                self.line += 1;
-            }
-
-            // literals
-            ('"', _) => self.handle_string(),
-            (c, _) if c.is_ascii_digit() => self.handle_number(),
-            (c, _) if Scanner::is_identifier(&c) => self.handle_identifier_and_keywords(),
-
-            // REFACTOR: there's some shared error handling between the scanner and the runtime
-            (token, _) => eprintln!(" {}| Unknown token: {token}", self.line),
-        };
+    fn add_token(&mut self, token_type: TokenType) {
+        let lexeme = &self.source[self.start..self.current];
+        let token = Token::new(token_type, lexeme.to_string(), self.line);
+        self.tokens.push(token);
     }
 
-    /// Consume current character
-    fn advance(&mut self) -> Option<char> {
-        // REVIEW:
-        // this is required because we only want to look at one character at a time. Perhaps
-        // there's a better way to do it.
-        let c = self.source.chars().nth(self.current);
+    fn add_token_and_skip(&mut self, token_type: TokenType, skip_chars: usize) {
+        self.add_token(token_type);
 
+        // skip n chars
+        for _ in 0..skip_chars {
+            self.advance();
+        }
+    }
+
+    /// Consume current character. Increases character index if next() is Some(_)
+    fn advance(&mut self) -> Option<char> {
+        let c = self.chars.next();
+
+        // prevent out of bound lookups when indexing the source array
         if c.is_some() {
             self.current += 1;
         }
@@ -124,31 +131,15 @@ impl Scanner {
         c
     }
 
-    /// Peek at the character returned by `advance`
-    fn peek(&self) -> Option<char> {
-        self.source.chars().nth(self.current)
-    }
-
-    /// Peek at the next character returned by `advance`
-    fn peek_next(&self) -> Option<char> {
-        let index = self.current + 1;
-        match index > self.source.len() {
-            true => None,
-            false => self.source.chars().nth(index),
-        }
-    }
-
     fn consume_digits(&mut self) {
-        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+        while matches!(self.chars.peek(), Some(c) if c.is_ascii_digit()) {
             self.advance();
         }
     }
 
     fn handle_comment(&mut self) {
         // consume the next character
-        while let Some(c) = self.advance()
-            && !self.is_at_end()
-        {
+        while let Some(c) = self.advance() {
             if c == '\n' {
                 break;
             }
@@ -156,9 +147,7 @@ impl Scanner {
     }
 
     fn handle_string(&mut self) {
-        while let Some(c) = self.peek()
-            && !self.is_at_end()
-        {
+        while let Some(c) = self.chars.peek() {
             match c {
                 // Multi-line comment
                 '\n' => self.line += 1,
@@ -168,7 +157,7 @@ impl Scanner {
             _ = self.advance();
         }
 
-        if self.is_at_end() {
+        if self.chars.peek().is_none() {
             // REFACTOR: search for eprintln in this file and consolidate them
             eprintln!(" {}| Unterminated string.", self.line);
             return;
@@ -186,9 +175,18 @@ impl Scanner {
         // consume whole number
         self.consume_digits();
 
+        // create a second iterator to look farther
+        let mut chars2 = self.chars.clone();
+
+        let peek_1st = self.chars.peek();
+        let peek_2nd = {
+            chars2.next();
+            chars2.peek()
+        };
+
         // check if the current and next characters are the fractional part of a number -e.g. `.9`
-        match (self.peek(), self.peek_next()) {
-            (Some(c), Some(next)) if c == '.' && next.is_ascii_digit() => {
+        match (peek_1st, peek_2nd) {
+            (Some(c), Some(next)) if *c == '.' && next.is_ascii_digit() => {
                 // consume '.'
                 self.advance();
 
@@ -200,15 +198,16 @@ impl Scanner {
 
         let literal = &self.source[self.start..self.current];
         let Ok(number) = literal.parse::<f64>() else {
-            eprintln!(" {}| failed to parse.", self.line);
+            eprintln!(" {}| failed to parse({literal})", self.line,);
             return;
         };
+
         self.add_token(TokenType::Number(number));
     }
 
     fn handle_identifier_and_keywords(&mut self) {
         // extract the entire identifier before categorising it. See maximal munch
-        while matches!(self.peek(), Some(c) if Scanner::is_identifier(&c)) {
+        while matches!(self.chars.peek(), Some(c) if Scanner::is_identifier(c)) {
             self.advance();
         }
 
