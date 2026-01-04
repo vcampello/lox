@@ -1,9 +1,24 @@
+use core::fmt;
 use std::{iter::Peekable, slice::Iter};
 
 use crate::{
     ast::expression::{Expr, LiteralValue},
     token::{Token, TokenType},
 };
+
+pub enum ParserError {
+    MissingToken(TokenType),
+}
+
+impl fmt::Display for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingToken(v) => write!(f, "Expected to find '{v}', after expression"),
+        }
+    }
+}
+
+pub type ParserResult<T> = Result<T, ParserError>;
 
 pub struct Parser<'a> {
     tokens: &'a [Token],
@@ -18,6 +33,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // REVIEW: maybe this should return (bool, Option<&Token>)
     fn check(&mut self, token_type: &TokenType) -> bool {
         matches!(self.iter.peek(), Some(t) if t.token_type == *token_type)
     }
@@ -128,16 +144,31 @@ impl<'a> Parser<'a> {
         //     }
         //     None => (),
         // };
-        //
 
-        if self.match_tokens(&[TokenType::LeftParen]).is_some() {
-            // TODO: use self.consume
-            // consume(RIGHT_PAREN, "Expect ')' after expression.");
+        // handle grouping expression
+        let is_left_paren = self.match_tokens(&[TokenType::LeftParen]).is_some();
+        let found_right_paren = self
+            .consume(TokenType::RightParen, "Expect ')' after expression.")
+            .is_ok();
+
+        if is_left_paren && found_right_paren {
             return Expr::new_grouping(self.expression());
         }
 
         // TODO: proper error handling
         todo!("finish implementing Parser.primary");
+    }
+
+    fn consume(&mut self, token_type: TokenType, message: &str) -> ParserResult<&Token> {
+        if !self.check(&token_type) {
+            return Err(ParserError::MissingToken(token_type));
+        }
+
+        // We know it's the right token because of self.check
+        Ok(self
+            .iter
+            .next()
+            .expect("Expected to find matching TokenType"))
     }
 
     pub fn parse(&mut self) -> Expr {
