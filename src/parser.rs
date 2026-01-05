@@ -52,6 +52,7 @@ impl<'a> Parser<'a> {
         self.equality()
     }
 
+    /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
     fn equality(&mut self) -> ParserResult<Expr> {
         let mut expr = self.comparison()?;
 
@@ -64,6 +65,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    /// comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     fn comparison(&mut self) -> ParserResult<Expr> {
         let mut expr = self.term()?;
 
@@ -81,6 +83,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    /// term → factor ( ( "-" | "+" ) factor )* ;
     fn term(&mut self) -> ParserResult<Expr> {
         let mut expr = self.factor()?;
 
@@ -93,6 +96,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    /// factor → unary ( ( "/" | "*" ) unary )* ;
     fn factor(&mut self) -> ParserResult<Expr> {
         let mut expr = self.unary()?;
 
@@ -105,6 +109,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    /// unary → ( "!" | "-" ) unary | primary ;
     fn unary(&mut self) -> ParserResult<Expr> {
         match self.match_tokens(&[TokenType::Bang, TokenType::Minus]) {
             Some(token) => {
@@ -117,6 +122,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
         if self.match_tokens(&[TokenType::False]).is_some() {
             return Ok(Expr::Literal(LiteralValue::Bool(false)));
