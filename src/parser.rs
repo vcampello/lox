@@ -34,15 +34,14 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // REVIEW: maybe this should return (bool, Option<&Token>)
     fn check(&mut self, token_type: &TokenType) -> bool {
         matches!(self.iter.peek(), Some(t) if t.token_type == *token_type)
     }
 
-    fn match_tokens(&mut self, token_types: &[TokenType]) -> Option<&Token> {
+    fn match_tokens(&mut self, token_types: &[TokenType]) -> Option<Token> {
         for token_type in token_types.iter() {
             if self.check(token_type) {
-                return dbg!(self.iter.next());
+                return dbg!(self.iter.next().cloned());
             }
         }
 
@@ -57,7 +56,7 @@ impl<'a> Parser<'a> {
         let mut expr = self.comparison()?;
 
         while let Some(token) = self.match_tokens(&[TokenType::Equal, TokenType::EqualEqual]) {
-            let operator = token.clone();
+            let operator = token;
             let right = self.comparison()?;
             expr = Expr::new_binary(expr, operator, right)
         }
@@ -74,7 +73,7 @@ impl<'a> Parser<'a> {
             TokenType::Less,
             TokenType::LessEqual,
         ]) {
-            let operator = token.clone();
+            let operator = token;
             let right = self.term()?;
             expr = Expr::new_binary(expr, operator, right)
         }
@@ -86,7 +85,7 @@ impl<'a> Parser<'a> {
         let mut expr = self.factor()?;
 
         while let Some(token) = self.match_tokens(&[TokenType::Plus, TokenType::Minus]) {
-            let operator = token.clone();
+            let operator = token;
             let right = self.term()?;
             expr = Expr::new_binary(expr, operator, right)
         }
@@ -98,7 +97,7 @@ impl<'a> Parser<'a> {
         let mut expr = self.unary()?;
 
         while let Some(token) = self.match_tokens(&[TokenType::Slash, TokenType::Star]) {
-            let operator = token.clone();
+            let operator = token;
             let right = self.term()?;
             expr = Expr::new_binary(expr, operator, right)
         }
@@ -109,7 +108,7 @@ impl<'a> Parser<'a> {
     fn unary(&mut self) -> ParserResult<Expr> {
         match self.match_tokens(&[TokenType::Bang, TokenType::Minus]) {
             Some(token) => {
-                let operator = token.clone();
+                let operator = token;
                 let right = self.term()?;
 
                 Ok(Expr::new_unary(operator, right))
@@ -135,7 +134,7 @@ impl<'a> Parser<'a> {
         if let Some(token) =
             self.match_tokens(&[TokenType::Number(0.0), TokenType::String(String::new())])
         {
-            let operator = token.clone();
+            let operator = token;
             let right = self.term()?;
             return Ok(Expr::new_unary(operator, right));
         }
@@ -147,6 +146,7 @@ impl<'a> Parser<'a> {
         }
 
         eprintln!("this is not implemented properly.");
+        // dbg!(&self.iter);
         // FIX: this should return the toke in self.iter.peek()
         Err(ParserError::ExpectedExpression)
     }
