@@ -87,9 +87,9 @@ impl<'a> Parser<'a> {
     fn term(&mut self) -> ParserResult<Expr> {
         let mut expr = self.factor()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::Plus, TokenType::Minus]) {
+        while let Some(token) = self.match_tokens(&[TokenType::Minus, TokenType::Plus]) {
             let operator = token;
-            let right = self.term()?;
+            let right = self.factor()?;
             expr = Expr::new_binary(expr, operator, right)
         }
 
@@ -102,7 +102,7 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.match_tokens(&[TokenType::Slash, TokenType::Star]) {
             let operator = token;
-            let right = self.term()?;
+            let right = self.unary()?;
             expr = Expr::new_binary(expr, operator, right)
         }
 
@@ -114,7 +114,7 @@ impl<'a> Parser<'a> {
         match self.match_tokens(&[TokenType::Bang, TokenType::Minus]) {
             Some(token) => {
                 let operator = token;
-                let right = self.term()?;
+                let right = self.unary()?;
 
                 Ok(Expr::new_unary(operator, right))
             }
@@ -147,8 +147,9 @@ impl<'a> Parser<'a> {
 
         // handle grouping expression
         if self.match_tokens(&[TokenType::LeftParen]).is_some() {
+            let expr = self.expression()?; // must be called before consuming
             self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
-            return Ok(Expr::new_grouping(self.expression()?));
+            return Ok(Expr::new_grouping(expr));
         }
 
         eprintln!("this is not implemented properly.");
