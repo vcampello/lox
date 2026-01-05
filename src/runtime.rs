@@ -1,4 +1,4 @@
-use crate::scanner::Scanner;
+use crate::{ast::expression::Expr, parser::Parser, scanner::Scanner};
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -19,10 +19,22 @@ impl Runtime {
     // TODO: accept a stream
     pub fn run(&self, src: &str) {
         let mut scanner = Scanner::new(src);
+        let tokens = scanner.scan_tokens();
 
-        for token in scanner.scan_tokens() {
+        println!("Scanned tokens:");
+        for token in tokens {
             println!("{token}");
         }
+
+        let mut parser = Parser::new(tokens);
+
+        match parser.parse() {
+            Err(e) => eprintln!("Failed to parse: {e}"),
+            Ok(ast) => {
+                println!("AST:");
+                println!("{}", Expr::print(&ast));
+            }
+        };
     }
 
     fn error(&mut self, line: &u32, msg: &str) {

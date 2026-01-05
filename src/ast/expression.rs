@@ -61,7 +61,7 @@ impl Expr {
 
     // REVIEW: this could be a trait and then there could be an AST printer
     // NOTE: I'll see how far I can get without the visitor pattern suggested in the book
-    fn print(e: &Expr) -> String {
+    pub fn print(e: &Expr) -> String {
         match e {
             Expr::Unary { operator, right } => {
                 format!("({} {})", operator.lexeme, Expr::print(right))

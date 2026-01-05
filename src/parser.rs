@@ -6,14 +6,17 @@ use crate::{
     token::{Token, TokenType},
 };
 
+#[derive(Debug, Clone)]
 pub enum ParserError {
-    MissingToken(TokenType),
+    ExpectedToken(TokenType),
+    ExpectedExpression,
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::MissingToken(v) => write!(f, "Expected to find '{v}', after expression"),
+            Self::ExpectedToken(v) => write!(f, "Expected to find '{v}', after expression."),
+            Self::ExpectedExpression => write!(f, "Expected expression."),
         }
     }
 }
@@ -21,14 +24,12 @@ impl fmt::Display for ParserError {
 pub type ParserResult<T> = Result<T, ParserError>;
 
 pub struct Parser<'a> {
-    tokens: &'a [Token],
     iter: Peekable<Iter<'a, Token>>,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: &'a [Token]) -> Self {
         Self {
-            tokens,
             iter: tokens.iter().peekable(),
         }
     }
@@ -41,31 +42,31 @@ impl<'a> Parser<'a> {
     fn match_tokens(&mut self, token_types: &[TokenType]) -> Option<&Token> {
         for token_type in token_types.iter() {
             if self.check(token_type) {
-                return self.iter.next();
+                return dbg!(self.iter.next());
             }
         }
 
         None
     }
 
-    fn expression(&mut self) -> Expr {
+    fn expression(&mut self) -> ParserResult<Expr> {
         self.equality()
     }
 
-    fn equality(&mut self) -> Expr {
-        let mut expr = self.comparison();
+    fn equality(&mut self) -> ParserResult<Expr> {
+        let mut expr = self.comparison()?;
 
         while let Some(token) = self.match_tokens(&[TokenType::Equal, TokenType::EqualEqual]) {
             let operator = token.clone();
-            let right = self.comparison();
+            let right = self.comparison()?;
             expr = Expr::new_binary(expr, operator, right)
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn comparison(&mut self) -> Expr {
-        let mut expr = self.term();
+    fn comparison(&mut self) -> ParserResult<Expr> {
+        let mut expr = self.term()?;
 
         while let Some(token) = self.match_tokens(&[
             TokenType::Greater,
@@ -74,96 +75,89 @@ impl<'a> Parser<'a> {
             TokenType::LessEqual,
         ]) {
             let operator = token.clone();
-            let right = self.term();
+            let right = self.term()?;
             expr = Expr::new_binary(expr, operator, right)
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn term(&mut self) -> Expr {
-        let mut expr = self.factor();
+    fn term(&mut self) -> ParserResult<Expr> {
+        let mut expr = self.factor()?;
 
         while let Some(token) = self.match_tokens(&[TokenType::Plus, TokenType::Minus]) {
             let operator = token.clone();
-            let right = self.term();
+            let right = self.term()?;
             expr = Expr::new_binary(expr, operator, right)
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn factor(&mut self) -> Expr {
-        let mut expr = self.unary();
+    fn factor(&mut self) -> ParserResult<Expr> {
+        let mut expr = self.unary()?;
 
         while let Some(token) = self.match_tokens(&[TokenType::Slash, TokenType::Star]) {
             let operator = token.clone();
-            let right = self.term();
+            let right = self.term()?;
             expr = Expr::new_binary(expr, operator, right)
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn unary(&mut self) -> Expr {
+    fn unary(&mut self) -> ParserResult<Expr> {
         match self.match_tokens(&[TokenType::Bang, TokenType::Minus]) {
             Some(token) => {
                 let operator = token.clone();
-                let right = self.term();
+                let right = self.term()?;
 
-                Expr::new_unary(operator, right)
+                Ok(Expr::new_unary(operator, right))
             }
             None => self.primary(),
         }
     }
 
-    fn primary(&mut self) -> Expr {
+    fn primary(&mut self) -> ParserResult<Expr> {
         if self.match_tokens(&[TokenType::False]).is_some() {
-            return Expr::Literal(LiteralValue::Bool(false));
+            return Ok(Expr::Literal(LiteralValue::Bool(false)));
         }
 
         if self.match_tokens(&[TokenType::True]).is_some() {
-            return Expr::Literal(LiteralValue::Bool(true));
+            return Ok(Expr::Literal(LiteralValue::Bool(true)));
         }
 
         if self.match_tokens(&[TokenType::Nil]).is_some() {
-            return Expr::Literal(LiteralValue::Nil);
-        }
-
-        if self.match_tokens(&[TokenType::Nil]).is_some() {
-            return Expr::Literal(LiteralValue::Nil);
+            return Ok(Expr::Literal(LiteralValue::Nil));
         }
 
         // REVIEW: this doesn't work as intended as the enum require values. I'll need to review the TokenType
-        // match self.match_tokens(&[TokenType::Number, TokenType::String]) {
-        //     Some(token) => {
-        //         let operator = token.clone();
-        //         let right = self.term();
-        //
-        //         return Expr::new_unary(operator, right);
-        //     }
-        //     None => (),
-        // };
-
-        // handle grouping expression
-        let is_left_paren = self.match_tokens(&[TokenType::LeftParen]).is_some();
-        let found_right_paren = self
-            .consume(TokenType::RightParen, "Expect ')' after expression.")
-            .is_ok();
-
-        if is_left_paren && found_right_paren {
-            return Expr::new_grouping(self.expression());
+        if let Some(token) =
+            self.match_tokens(&[TokenType::Number(0.0), TokenType::String(String::new())])
+        {
+            let operator = token.clone();
+            let right = self.term()?;
+            return Ok(Expr::new_unary(operator, right));
         }
 
-        // TODO: proper error handling
-        todo!("finish implementing Parser.primary");
+        // handle grouping expression
+        if self.match_tokens(&[TokenType::LeftParen]).is_some() {
+            self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
+            return Ok(Expr::new_grouping(self.expression()?));
+        }
+
+        eprintln!("this is not implemented properly.");
+        // FIX: this should return the toke in self.iter.peek()
+        Err(ParserError::ExpectedExpression)
     }
 
     fn consume(&mut self, token_type: TokenType, message: &str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
-            return Err(ParserError::MissingToken(token_type));
+            self.iter.next();
+            return Err(ParserError::ExpectedToken(token_type));
         }
 
+        // TODO: improve this. Maybe some kind of map?
         // We know it's the right token because of self.check
         Ok(self
             .iter
@@ -171,8 +165,9 @@ impl<'a> Parser<'a> {
             .expect("Expected to find matching TokenType"))
     }
 
-    pub fn parse(&mut self) -> Expr {
-        todo!();
+    // FIXME: does this error need to cross this module's boundary?
+    pub fn parse(&mut self) -> ParserResult<Expr> {
+        self.expression()
     }
 }
 
