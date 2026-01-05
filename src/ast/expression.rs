@@ -14,7 +14,7 @@ impl fmt::Display for LiteralValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             // Literals.
-            LiteralValue::String(v) => write!(f, "{v}"),
+            LiteralValue::String(v) => write!(f, "\"{v}\""),
             LiteralValue::Number(v) => write!(f, "{v}"),
             LiteralValue::Bool(v) => write!(f, "{v}"),
             LiteralValue::Nil => write!(f, "nil"),

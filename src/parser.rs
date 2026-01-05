@@ -124,37 +124,26 @@ impl<'a> Parser<'a> {
 
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
-        if self.match_tokens(&[TokenType::False]).is_some() {
-            return Ok(Expr::Literal(LiteralValue::Bool(false)));
+        // NOTE: we'll bypass match_tokens to make this more readable
+        if let Some(token) = self.iter.next() {
+            match &token.token_type {
+                TokenType::True => return Ok(Expr::Literal(LiteralValue::Bool(true))),
+                TokenType::False => return Ok(Expr::Literal(LiteralValue::Bool(false))),
+                TokenType::Nil => return Ok(Expr::Literal(LiteralValue::Nil)),
+                TokenType::Number(v) => return Ok(Expr::Literal(LiteralValue::Number(*v))),
+                TokenType::String(v) => {
+                    return Ok(Expr::Literal(LiteralValue::String(v.to_string())));
+                }
+                TokenType::LeftParen => {
+                    let expr = self.expression()?; // must be called before consuming
+                    self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
+                    return Ok(Expr::new_grouping(expr));
+                }
+
+                _ => (), // just let it fall-through
+            };
         }
 
-        if self.match_tokens(&[TokenType::True]).is_some() {
-            return Ok(Expr::Literal(LiteralValue::Bool(true)));
-        }
-
-        if self.match_tokens(&[TokenType::Nil]).is_some() {
-            return Ok(Expr::Literal(LiteralValue::Nil));
-        }
-
-        // REVIEW: this doesn't work as intended as the enum require values. I'll need to review the TokenType
-        if let Some(token) =
-            self.match_tokens(&[TokenType::Number(0.0), TokenType::String(String::new())])
-        {
-            let operator = token;
-            let right = self.term()?;
-            return Ok(Expr::new_unary(operator, right));
-        }
-
-        // handle grouping expression
-        if self.match_tokens(&[TokenType::LeftParen]).is_some() {
-            let expr = self.expression()?; // must be called before consuming
-            self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
-            return Ok(Expr::new_grouping(expr));
-        }
-
-        eprintln!("this is not implemented properly.");
-        // dbg!(&self.iter);
-        // FIX: this should return the toke in self.iter.peek()
         Err(ParserError::ExpectedExpression)
     }
 
