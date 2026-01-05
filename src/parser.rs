@@ -160,7 +160,7 @@ impl<'a> Parser<'a> {
 
     fn consume(&mut self, token_type: TokenType, message: &str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
-            self.iter.next();
+            // self.iter.next();
             return Err(ParserError::ExpectedToken(token_type));
         }
 
