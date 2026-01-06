@@ -2,7 +2,7 @@ use core::fmt;
 use std::{iter::Peekable, slice::Iter};
 
 use crate::{
-    ast::expression::{Expr, LiteralValue},
+    ast::expression::Expr,
     token::{Token, TokenType},
 };
 
@@ -127,12 +127,12 @@ impl<'a> Parser<'a> {
         // NOTE: we'll bypass match_tokens to make this more readable
         if let Some(token) = self.iter.next() {
             match &token.token_type {
-                TokenType::True => return Ok(Expr::Literal(LiteralValue::Bool(true))),
-                TokenType::False => return Ok(Expr::Literal(LiteralValue::Bool(false))),
-                TokenType::Nil => return Ok(Expr::Literal(LiteralValue::Nil)),
-                TokenType::Number(v) => return Ok(Expr::Literal(LiteralValue::Number(*v))),
+                TokenType::True => return Ok(Expr::BoolLiteral(true)),
+                TokenType::False => return Ok(Expr::BoolLiteral(false)),
+                TokenType::Nil => return Ok(Expr::Nil),
+                TokenType::Number(v) => return Ok(Expr::NumberLiteral(*v)),
                 TokenType::String(v) => {
-                    return Ok(Expr::Literal(LiteralValue::String(v.to_string())));
+                    return Ok(Expr::StringLiteral(v.to_string()));
                 }
                 TokenType::LeftParen => {
                     let expr = self.expression()?; // must be called before consuming

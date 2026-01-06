@@ -1,28 +1,5 @@
-use std::fmt;
-
 use crate::token::Token;
 
-#[derive(Debug, Clone)]
-pub enum LiteralValue {
-    String(String),
-    Number(f64),
-    Bool(bool),
-    Nil, // REVIEW: should this be Nil(None)?
-}
-
-impl fmt::Display for LiteralValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            // Literals.
-            LiteralValue::String(v) => write!(f, "\"{v}\""),
-            LiteralValue::Number(v) => write!(f, "{v}"),
-            LiteralValue::Bool(v) => write!(f, "{v}"),
-            LiteralValue::Nil => write!(f, "nil"),
-        }
-    }
-}
-
-// REVIEW: expr::Expr is confusing. Is this the correct way to handle this?
 #[derive(Debug, Clone)]
 pub enum Expr {
     Unary {
@@ -34,9 +11,13 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
-    // This cannot be Token because it needs to be a subset which has literal values
-    Literal(LiteralValue),
     Grouping(Box<Expr>),
+
+    // Treat literals as individual expressions
+    BoolLiteral(bool),
+    NumberLiteral(f64),
+    StringLiteral(String),
+    Nil,
 }
 
 impl Expr {
@@ -78,9 +59,14 @@ impl Expr {
                     Expr::print(right)
                 )
             }
-            Expr::Literal(value) => {
+            Expr::StringLiteral(value) => value.clone(),
+            Expr::NumberLiteral(value) => {
                 format!("{value}")
             }
+            Expr::BoolLiteral(value) => {
+                format!("{value}")
+            }
+            Expr::Nil => "nil".to_string(),
             Expr::Grouping(e) => {
                 format!("(group {})", Expr::print(e))
             }
@@ -96,7 +82,7 @@ mod tests {
     #[test]
     fn unary() {
         let operator = Token::new(TokenType::Minus, String::from("-"), 1);
-        let literal = Expr::Literal(LiteralValue::Number(1.0));
+        let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_unary(operator, literal);
         let result = Expr::print(&e);
         assert_eq!(result, "(- 1)")
@@ -105,7 +91,7 @@ mod tests {
     #[test]
     fn binary() {
         let operator = Token::new(TokenType::Minus, String::from("-"), 1);
-        let literal = Expr::Literal(LiteralValue::Number(1.0));
+        let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_binary(literal.clone(), operator, literal);
         let result = Expr::print(&e);
         assert_eq!(result, "(- 1 1)")
@@ -113,14 +99,14 @@ mod tests {
 
     #[test]
     fn literal() {
-        let literal = Expr::Literal(LiteralValue::Number(1.0));
+        let literal = Expr::NumberLiteral(1.0);
         let result = Expr::print(&literal);
         assert_eq!(result, "1")
     }
 
     #[test]
     fn grouping() {
-        let literal = Expr::Literal(LiteralValue::Number(1.0));
+        let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_grouping(literal);
         let result = Expr::print(&e);
         assert_eq!(result, "(group 1)")
@@ -130,9 +116,9 @@ mod tests {
     fn nested() {
         let left = Expr::new_unary(
             Token::new(TokenType::Minus, "-".to_string(), 1),
-            Expr::Literal(LiteralValue::Number(123.0)),
+            Expr::NumberLiteral(123.0),
         );
-        let right = Expr::new_grouping(Expr::Literal(LiteralValue::Number(45.67)));
+        let right = Expr::new_grouping(Expr::NumberLiteral(45.67));
 
         let operator = Token::new(TokenType::Star, "*".to_string(), 1);
 
