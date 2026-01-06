@@ -34,6 +34,38 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // FIXME: does this error need to cross this module's boundary?
+    pub fn parse(&mut self) -> ParserResult<Expr> {
+        self.expression()
+    }
+
+    fn sychronise(&mut self) {
+        while let Some(token) = self.advance() {
+            // statement boundary reached reached
+            if token.token_type == TokenType::Semicolon {
+                return;
+            }
+
+            if let Some(next_token) = self.iter.peek() {
+                match next_token.token_type {
+                    TokenType::Class
+                    | TokenType::Fun
+                    | TokenType::Var
+                    | TokenType::For
+                    | TokenType::If
+                    | TokenType::While
+                    | TokenType::Print
+                    | TokenType::Return => return,
+                    _ => continue,
+                };
+            }
+        }
+    }
+
+    fn advance(&mut self) -> Option<&Token> {
+        self.iter.next()
+    }
+
     fn check(&mut self, token_type: &TokenType) -> bool {
         matches!(self.iter.peek(), Some(t) if t.token_type == *token_type)
     }
@@ -41,7 +73,7 @@ impl<'a> Parser<'a> {
     fn match_tokens(&mut self, token_types: &[TokenType]) -> Option<Token> {
         for token_type in token_types.iter() {
             if self.check(token_type) {
-                return dbg!(self.iter.next().cloned());
+                return self.advance().cloned();
             }
         }
 
@@ -125,7 +157,7 @@ impl<'a> Parser<'a> {
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
         // NOTE: we'll bypass match_tokens to make this more readable
-        if let Some(token) = self.iter.next() {
+        if let Some(token) = self.advance() {
             match &token.token_type {
                 TokenType::True => return Ok(Expr::BoolLiteral(true)),
                 TokenType::False => return Ok(Expr::BoolLiteral(false)),
@@ -149,21 +181,12 @@ impl<'a> Parser<'a> {
 
     fn consume(&mut self, token_type: TokenType, message: &str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
-            // self.iter.next();
             return Err(ParserError::ExpectedToken(token_type));
         }
 
         // TODO: improve this. Maybe some kind of map?
         // We know it's the right token because of self.check
-        Ok(self
-            .iter
-            .next()
-            .expect("Expected to find matching TokenType"))
-    }
-
-    // FIXME: does this error need to cross this module's boundary?
-    pub fn parse(&mut self) -> ParserResult<Expr> {
-        self.expression()
+        Ok(self.advance().expect(message))
     }
 }
 
