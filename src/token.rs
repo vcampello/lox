@@ -24,6 +24,8 @@ pub enum TokenType {
     GreaterEqual,
     Less,
     LessEqual,
+    QuestionMark,
+    Colon,
 
     // Literals.
     Identifier(String),
@@ -93,6 +95,8 @@ impl fmt::Display for TokenType {
             TokenType::Semicolon => write!(f, "Semicolon"),
             TokenType::Slash => write!(f, "Slash"),
             TokenType::Star => write!(f, "Star"),
+            TokenType::QuestionMark => write!(f, "QuestionMark"),
+            TokenType::Colon => write!(f, "Colon"),
 
             // One or two character tokens.
             TokenType::Bang => write!(f, "Bang"),

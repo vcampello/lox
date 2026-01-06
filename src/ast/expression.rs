@@ -11,6 +11,11 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Conditional {
+        condition: Box<Expr>,
+        when_true: Box<Expr>,
+        when_false: Box<Expr>,
+    },
     Grouping(Box<Expr>),
 
     // Treat literals as individual expressions
@@ -36,6 +41,14 @@ impl Expr {
         }
     }
 
+    pub fn new_conditional(condition: Expr, when_true: Expr, when_false: Expr) -> Expr {
+        Self::Conditional {
+            condition: Box::new(condition),
+            when_true: Box::new(when_true),
+            when_false: Box::new(when_false),
+        }
+    }
+
     pub fn new_grouping(expr: Expr) -> Expr {
         Self::Grouping(Box::new(expr))
     }
@@ -57,6 +70,18 @@ impl Expr {
                     operator.lexeme,
                     Expr::print(left),
                     Expr::print(right)
+                )
+            }
+            Expr::Conditional {
+                condition,
+                when_true,
+                when_false,
+            } => {
+                format!(
+                    "(conditional {} {} {})",
+                    Expr::print(condition),
+                    Expr::print(when_true),
+                    Expr::print(when_false)
                 )
             }
             Expr::StringLiteral(value) => value.clone(),

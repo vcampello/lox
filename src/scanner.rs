@@ -75,6 +75,10 @@ impl<'a> Scanner<'a> {
                 ('/', Some('/')) => self.handle_comment(),
                 ('/', _) => self.add_token(TokenType::Slash),
 
+                // misc
+                ('?', _) => self.add_token(TokenType::QuestionMark),
+                (':', _) => self.add_token(TokenType::Colon),
+
                 // whitespace
                 (' ', _) => (),
                 ('\t', _) => (),
