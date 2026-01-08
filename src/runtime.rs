@@ -1,4 +1,4 @@
-use crate::{ast::expression::Expr, parser::Parser, scanner::Scanner};
+use crate::{ast::expression::Expr, interpreter::Interpreter, parser::Parser, scanner::Scanner};
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -21,18 +21,20 @@ impl Runtime {
         let mut scanner = Scanner::new(src);
         let tokens = scanner.scan_tokens();
 
-        println!("Scanned tokens:");
-        for token in tokens {
-            println!("{token}");
-        }
+        // TODO: add a flag to enable this once the REPL can evaluate things
+        // println!("Scanned tokens:");
+        // for token in tokens {
+        //     println!("{token}");
+        // }
 
         let mut parser = Parser::new(tokens);
 
         match parser.parse() {
             Err(e) => eprintln!("Failed to parse: {e}"),
             Ok(ast) => {
-                println!("AST:");
-                println!("{}", Expr::print(&ast));
+                // println!("{}", Expr::print(&ast));
+                let result = Interpreter::visit(&ast).unwrap();
+                println!("{result}");
             }
         };
     }
