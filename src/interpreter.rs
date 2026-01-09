@@ -53,19 +53,20 @@ pub enum RuntimeError {
 
 pub type InterpreterResult = Result<Value, RuntimeError>;
 
-pub struct Interpreter {}
+#[derive(Debug, Default)]
+pub struct Interpreter;
 
 impl Interpreter {
-    pub fn visit(expr: &Expr) -> InterpreterResult {
+    pub fn visit(&self, expr: &Expr) -> InterpreterResult {
         match expr {
             Expr::BoolLiteral(v) => Ok(Value::Bool(*v)),
             Expr::StringLiteral(v) => Ok(Value::String(v.clone())),
             Expr::NumberLiteral(v) => Ok(Value::Number(*v)),
             Expr::Nil => Ok(Value::Nil),
-            Expr::Grouping(expr) => Interpreter::visit(expr),
+            Expr::Grouping(expr) => self.visit(expr),
 
             Expr::Unary { operator, right } => {
-                let right_result = Interpreter::visit(right)?;
+                let right_result = self.visit(right)?;
 
                 match (&operator.token_type, right_result) {
                     (TokenType::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
@@ -82,8 +83,8 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let right_resut = Interpreter::visit(right)?;
-                let left_resut = Interpreter::visit(left)?;
+                let right_resut = self.visit(right)?;
+                let left_resut = self.visit(left)?;
 
                 // REVIEW: would it be more readable to have a nested match?
                 match (&operator.token_type, left_resut, right_resut) {

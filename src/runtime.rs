@@ -28,12 +28,13 @@ impl Runtime {
         // }
 
         let mut parser = Parser::new(tokens);
+        let interpreter = Interpreter;
 
         match parser.parse() {
             Err(e) => eprintln!("Failed to parse: {e}"),
             Ok(ast) => {
                 // println!("{}", Expr::print(&ast));
-                let result = Interpreter::visit(&ast).unwrap();
+                let result = interpreter.visit(&ast).unwrap();
                 println!("{result}");
             }
         };
