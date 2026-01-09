@@ -44,11 +44,13 @@ impl ops::Add<Value> for Value {
 
 #[derive(Clone, Debug)]
 pub enum RuntimeError {
+    // TODO: add context
     // TODO: this should probably be a combination of top level errors with different payloads.
     // e.g. InvalidExpression(expr)
     // e.g. InvalidOperation(...)
     InvalidOperation,
     InvalidArithmeticOperation,
+    Unimplemented,
 }
 
 pub type InterpreterResult = Result<Value, RuntimeError>;
@@ -124,7 +126,7 @@ impl Interpreter {
                     _ => Err(RuntimeError::InvalidOperation),
                 }
             }
-            _ => todo!(),
+            _ => Err(RuntimeError::Unimplemented),
         }
     }
 
