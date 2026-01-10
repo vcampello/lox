@@ -21,27 +21,6 @@ impl fmt::Display for Value {
     }
 }
 
-impl ops::Add<Value> for Value {
-    type Output = Value;
-    fn add(self, rhs: Value) -> Self::Output {
-        match (self, rhs) {
-            // maths!
-            (Value::Number(l), Value::Number(r)) => Value::Number(l + r),
-
-            // strings
-            (Value::String(l), r) => Value::String(l + &r.to_string()),
-            (l, Value::String(r)) => Value::String(l.to_string() + &r),
-
-            // Adding anything with nil should be nil
-            (Value::Nil, _) => Value::Nil,
-            (_, Value::Nil) => Value::Nil,
-
-            // Anything else is probably NaN
-            _ => Value::Number(f64::NAN),
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum RuntimeError {
     // TODO: add context
@@ -51,6 +30,16 @@ pub enum RuntimeError {
     InvalidOperation,
     InvalidArithmeticOperation,
     Unimplemented,
+}
+
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RuntimeError::InvalidOperation => write!(f, "InvalidOperation"),
+            RuntimeError::InvalidArithmeticOperation => write!(f, "InvalidArithmeticOperation"),
+            RuntimeError::Unimplemented => write!(f, "Unimplemented"),
+        }
+    }
 }
 
 pub type InterpreterResult = Result<Value, RuntimeError>;
@@ -76,7 +65,7 @@ impl Interpreter {
                         let is_true = Interpreter::is_truthy(&v);
                         Ok(Value::Bool(!is_true))
                     }
-                    _ => Ok(Value::Bool(false)),
+                    _ => Err(RuntimeError::InvalidOperation),
                 }
             }
 
@@ -86,42 +75,42 @@ impl Interpreter {
                 right,
             } => {
                 let right_resut = self.visit(right)?;
-                let left_resut = self.visit(left)?;
+                let left_result = self.visit(left)?;
 
-                // REVIEW: would it be more readable to have a nested match?
-                match (&operator.token_type, left_resut, right_resut) {
+                match (&operator.token_type, left_result, right_resut) {
                     // arithmetic
-                    (TokenType::Slash, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a / b))
+                    (TokenType::Slash, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Number(l / r))
                     }
-                    (TokenType::Star, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a * b))
+                    (TokenType::Star, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Number(l * r))
                     }
-                    (TokenType::Minus, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a - b))
+                    (TokenType::Minus, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Number(l - r))
                     }
-                    (TokenType::Plus, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a + b))
+                    (TokenType::Plus, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Number(l + r))
                     }
 
-                    // string concatenation (uses a custom ops::Add trait)
-                    (TokenType::Plus, a, b) => Ok(Value::String((a + b).to_string())),
+                    // string concatenation
+                    (TokenType::Plus, Value::String(l), r) => Ok(Value::String(l + &r.to_string())),
+                    (TokenType::Plus, l, Value::String(r)) => Ok(Value::String(l.to_string() + &r)),
 
                     // comparison
-                    (TokenType::Greater, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Bool(a > b))
+                    (TokenType::Greater, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Bool(l > r))
                     }
-                    (TokenType::GreaterEqual, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Bool(a >= b))
+                    (TokenType::GreaterEqual, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Bool(l >= r))
                     }
-                    (TokenType::Less, Value::Number(a), Value::Number(b)) => Ok(Value::Bool(a < b)),
-                    (TokenType::LessEqual, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Bool(a <= b))
+                    (TokenType::Less, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l < r)),
+                    (TokenType::LessEqual, Value::Number(l), Value::Number(r)) => {
+                        Ok(Value::Bool(l <= r))
                     }
 
                     // equality - number
-                    (TokenType::EqualEqual, a, b) => Ok(Value::Bool(a == b)),
-                    (TokenType::BangEqual, a, b) => Ok(Value::Bool(a != b)),
+                    (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
+                    (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
                     _ => Err(RuntimeError::InvalidOperation),
                 }

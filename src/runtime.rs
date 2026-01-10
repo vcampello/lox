@@ -34,8 +34,10 @@ impl Runtime {
             Err(e) => eprintln!("Failed to parse: {e}"),
             Ok(ast) => {
                 // println!("{}", Expr::print(&ast));
-                let result = interpreter.visit(&ast).unwrap();
-                println!("{result}");
+                match interpreter.visit(&ast) {
+                    Err(e) => eprintln!("Failed to parse: {e}"),
+                    Ok(result) => println!("{result}"),
+                }
             }
         };
     }
