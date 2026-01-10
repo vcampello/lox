@@ -23,6 +23,7 @@ impl fmt::Display for Value {
 
 #[derive(Clone, Debug)]
 pub enum RuntimeError {
+    // TODO: read https://doc.rust-lang.org/std/error/trait.Error.html
     // TODO: add context
     // TODO: this should probably be a combination of top level errors with different payloads.
     // e.g. InvalidExpression(expr)
