@@ -63,6 +63,7 @@ fn run_file(path: &str) {
 
     rtm.run(&src);
     if rtm.had_error {
-        process::exit(65)
+        process::exit(65);
     }
+    // Chapter 7 adds something along the lines of `had_runtime_error` => exit(70)
 }
