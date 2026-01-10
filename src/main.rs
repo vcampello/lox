@@ -41,7 +41,6 @@ fn run_prompt() {
                 }
 
                 rtm.run(source);
-                rtm.clear_error_flag(); // don't kill the session
             }
             Err(e) => {
                 eprintln!("Error: {e}");
@@ -55,9 +54,8 @@ fn run_prompt() {
 }
 
 fn run_file(path: &str) {
-    let rtm = Runtime::new();
+    let mut rtm = Runtime::new();
 
-    // REFACTOR: let errors bubble up to the caller
     let Ok(src) = fs::read_to_string(path) else {
         eprintln!("Failed to read {path}");
         process::exit(65)

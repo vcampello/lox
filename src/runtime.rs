@@ -2,6 +2,7 @@ use crate::{ast::expression::Expr, interpreter::Interpreter, parser::Parser, sca
 
 #[derive(Debug)]
 pub struct Runtime {
+    // REVIEW: convert into Result and let the caller decide what to do with each error
     pub had_error: bool,
 }
 
@@ -17,7 +18,9 @@ impl Runtime {
     }
 
     // TODO: accept a stream
-    pub fn run(&self, src: &str) {
+    pub fn run(&mut self, src: &str) {
+        self.had_error = false;
+
         let mut scanner = Scanner::new(src);
         let tokens = scanner.scan_tokens();
 
@@ -30,15 +33,22 @@ impl Runtime {
         let mut parser = Parser::new(tokens);
         let interpreter = Interpreter;
 
-        match parser.parse() {
-            Err(e) => eprintln!("Failed to parse: {e}"),
-            Ok(ast) => {
-                // println!("{}", Expr::print(&ast));
-                match interpreter.visit(&ast) {
-                    Err(e) => eprintln!("Failed to parse: {e}"),
-                    Ok(result) => println!("{result}"),
-                }
+        let ast = match parser.parse() {
+            Ok(ast) => ast,
+            Err(e) => {
+                self.had_error = true;
+                eprintln!("Failed to parse: {e}");
+                return;
             }
+        };
+
+        // println!("{}", Expr::print(&ast));
+        match interpreter.visit(&ast) {
+            Err(e) => {
+                self.had_error = true;
+                eprintln!("Failed to parse: {e}");
+            }
+            Ok(result) => println!("{result}"),
         };
     }
 
@@ -51,9 +61,5 @@ impl Runtime {
         // REFACTOR: there's some shared error handling between the scanner and the runtime
         eprintln!(" {line} | Error {location}: {msg}");
         self.had_error = true;
-    }
-
-    pub fn clear_error_flag(&mut self) {
-        self.had_error = false;
     }
 }
