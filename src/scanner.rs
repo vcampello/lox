@@ -100,11 +100,6 @@ impl<'a> Scanner<'a> {
             self.start = self.current;
         }
 
-        // TODO: completely remove Eof once the book explains why it needs it
-        // Terminate the program
-        self.tokens
-            .push(Token::new(TokenType::Eof, String::new(), self.line));
-
         &self.tokens
     }
 

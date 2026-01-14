@@ -49,8 +49,6 @@ pub enum TokenType {
     True,
     Var,
     While,
-
-    Eof,
 }
 
 impl TokenType {
@@ -130,8 +128,6 @@ impl fmt::Display for TokenType {
             TokenType::True => write!(f, "True"),
             TokenType::Var => write!(f, "Var"),
             TokenType::While => write!(f, "While"),
-
-            TokenType::Eof => write!(f, "Eof"),
         }
     }
 }
