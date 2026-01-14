@@ -1,6 +1,9 @@
-use std::{fmt, ops};
+use std::fmt;
 
-use crate::{ast::expression::Expr, token::TokenType};
+use crate::{
+    ast::{expression::Expr, statement::Stmt},
+    token::TokenType,
+};
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Value {
@@ -43,22 +46,36 @@ impl fmt::Display for RuntimeError {
     }
 }
 
-pub type InterpreterResult = Result<Value, RuntimeError>;
+pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
 #[derive(Debug, Default)]
 pub struct Interpreter;
 
 impl Interpreter {
-    pub fn visit(&self, expr: &Expr) -> InterpreterResult {
+    pub fn interpret(&self, stmts: &[Stmt]) -> InterpreterResult<()> {
+        for stmt in stmts.iter() {
+            match stmt {
+                Stmt::Print(expr) => {
+                    let result = self.evaluate(expr)?;
+                    println!("{result}");
+                }
+                Stmt::Expression(expr) => _ = self.evaluate(expr)?,
+            };
+        }
+
+        Ok(())
+    }
+
+    fn evaluate(&self, expr: &Expr) -> InterpreterResult<Value> {
         match expr {
             Expr::BoolLiteral(v) => Ok(Value::Bool(*v)),
             Expr::StringLiteral(v) => Ok(Value::String(v.clone())),
             Expr::NumberLiteral(v) => Ok(Value::Number(*v)),
             Expr::Nil => Ok(Value::Nil),
-            Expr::Grouping(expr) => self.visit(expr),
+            Expr::Grouping(expr) => self.evaluate(expr),
 
             Expr::Unary { operator, right } => {
-                let right_result = self.visit(right)?;
+                let right_result = self.evaluate(right)?;
 
                 match (&operator.token_type, right_result) {
                     (TokenType::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
@@ -75,8 +92,8 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let right_resut = self.visit(right)?;
-                let left_result = self.visit(left)?;
+                let right_resut = self.evaluate(right)?;
+                let left_result = self.evaluate(left)?;
 
                 match (&operator.token_type, left_result, right_resut) {
                     // arithmetic

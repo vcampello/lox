@@ -42,13 +42,9 @@ impl Runtime {
             }
         };
 
-        // println!("{}", Expr::print(&ast));
-        match interpreter.visit(&ast) {
-            Err(e) => {
-                self.had_error = true;
-                eprintln!("Failed to parse: {e}");
-            }
-            Ok(result) => println!("{result}"),
+        if let Err(e) = interpreter.interpret(&ast) {
+            self.had_error = true;
+            eprintln!("Failed to interpret: {e}");
         };
     }
 

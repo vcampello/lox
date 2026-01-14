@@ -2,7 +2,7 @@ use core::fmt;
 use std::{iter::Peekable, slice::Iter};
 
 use crate::{
-    ast::expression::Expr,
+    ast::{expression::Expr, statement::Stmt},
     token::{Token, TokenType},
 };
 
@@ -35,8 +35,19 @@ impl<'a> Parser<'a> {
     }
 
     // FIXME: does this error need to cross this module's boundary?
-    pub fn parse(&mut self) -> ParserResult<Expr> {
-        self.expression()
+    pub fn parse(&mut self) -> ParserResult<Vec<Stmt>> {
+        let mut stmts = Vec::new();
+
+        while self.iter.peek().is_some() {
+            match self.statement() {
+                Ok(stmt) => stmts.push(stmt),
+                // TODO: add error handling
+                Err(e) => {
+                    eprintln!("{e}")
+                }
+            }
+        }
+        Ok(stmts)
     }
 
     fn sychronise(&mut self) {
@@ -188,12 +199,30 @@ impl<'a> Parser<'a> {
         // We know it's the right token because of self.check
         Ok(self.advance().expect(message))
     }
+
+    fn statement(&mut self) -> ParserResult<Stmt> {
+        match self.match_tokens(&[TokenType::Print]) {
+            Some(_) => self.print_stmt(),
+            None => self.expression_stmt(),
+        }
+    }
+
+    fn print_stmt(&mut self) -> ParserResult<Stmt> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expected ; after value")?;
+        Ok(Stmt::Print(expr))
+    }
+
+    fn expression_stmt(&mut self) -> ParserResult<Stmt> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expected ; after value")?;
+        Ok(Stmt::Expression(expr))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::Token;
 
     #[test]
     fn lifetime() {
