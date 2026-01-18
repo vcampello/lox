@@ -100,6 +100,8 @@ impl<'a> Scanner<'a> {
             self.start = self.current;
         }
 
+        self.add_token(TokenType::Eof);
+
         &self.tokens
     }
 

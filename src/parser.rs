@@ -38,7 +38,7 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> ParserResult<Vec<Stmt>> {
         let mut stmts = Vec::new();
 
-        while self.iter.peek().is_some() {
+        while matches!(self.iter.peek(), Some(token) if token.token_type != TokenType::Eof) {
             // TODO: add error handling
             match self.declaration() {
                 Ok(stmt) => stmts.push(stmt),
@@ -69,7 +69,8 @@ impl<'a> Parser<'a> {
                     | TokenType::If
                     | TokenType::While
                     | TokenType::Print
-                    | TokenType::Return => return,
+                    | TokenType::Return
+                    | TokenType::Eof => return,
                     _ => continue,
                 };
             }
