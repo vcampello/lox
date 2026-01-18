@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::{
     ast::{expression::Expr, statement::Stmt},
+    environment::Env,
     token::TokenType,
 };
 
@@ -34,6 +35,7 @@ pub enum RuntimeError {
     InvalidOperation,
     InvalidArithmeticOperation,
     Unimplemented,
+    UndefinedVariable { name: String },
 }
 
 impl fmt::Display for RuntimeError {
@@ -41,6 +43,7 @@ impl fmt::Display for RuntimeError {
         match self {
             RuntimeError::InvalidOperation => write!(f, "InvalidOperation"),
             RuntimeError::InvalidArithmeticOperation => write!(f, "InvalidArithmeticOperation"),
+            RuntimeError::UndefinedVariable { name } => write!(f, "UndefinedVariable({name})"),
             RuntimeError::Unimplemented => write!(f, "Unimplemented"),
         }
     }
@@ -49,10 +52,16 @@ impl fmt::Display for RuntimeError {
 pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
 #[derive(Debug, Default)]
-pub struct Interpreter;
+pub struct Interpreter {
+    env: Env,
+}
 
 impl Interpreter {
-    pub fn interpret(&self, stmts: &[Stmt]) -> InterpreterResult<()> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn interpret(&mut self, stmts: &[Stmt]) -> InterpreterResult<()> {
         for stmt in stmts.iter() {
             match stmt {
                 Stmt::Print(expr) => {
@@ -60,13 +69,20 @@ impl Interpreter {
                     println!("{result}");
                 }
                 Stmt::Expression(expr) => _ = self.evaluate(expr)?,
+                Stmt::Var { name, initializer } => {
+                    let value = match initializer {
+                        Some(expr) => self.evaluate(expr)?,
+                        None => Value::Nil,
+                    };
+                    self.env.define(&name.lexeme, &value);
+                }
             };
         }
 
         Ok(())
     }
 
-    fn evaluate(&self, expr: &Expr) -> InterpreterResult<Value> {
+    fn evaluate(&mut self, expr: &Expr) -> InterpreterResult<Value> {
         match expr {
             Expr::BoolLiteral(v) => Ok(Value::Bool(*v)),
             Expr::StringLiteral(v) => Ok(Value::String(v.clone())),
@@ -133,6 +149,21 @@ impl Interpreter {
                     _ => Err(RuntimeError::InvalidOperation),
                 }
             }
+
+            Expr::Variable { name } => {
+                let v = self
+                    .env
+                    .get(&name.lexeme)
+                    // FIXME: this error handling is a mess but let's leave it here until I get to
+                    // the rewrite
+                    .map_err(|_e| RuntimeError::UndefinedVariable {
+                        name: name.lexeme.to_string(),
+                    })?;
+
+                Ok(v.clone())
+            }
+
+            // FIXME: remove once conditionals are added
             _ => Err(RuntimeError::Unimplemented),
         }
     }

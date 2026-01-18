@@ -39,14 +39,17 @@ impl<'a> Parser<'a> {
         let mut stmts = Vec::new();
 
         while self.iter.peek().is_some() {
-            match self.statement() {
+            // TODO: add error handling
+            match self.declaration() {
                 Ok(stmt) => stmts.push(stmt),
-                // TODO: add error handling
                 Err(e) => {
-                    eprintln!("{e}")
+                    eprintln!("{e}");
+                    // move to next statement
+                    self.sychronise();
                 }
             }
         }
+
         Ok(stmts)
     }
 
@@ -78,6 +81,7 @@ impl<'a> Parser<'a> {
     }
 
     fn check(&mut self, token_type: &TokenType) -> bool {
+        // dbg!(self.iter.peek());
         matches!(self.iter.peek(), Some(t) if t.token_type == *token_type)
     }
 
@@ -182,6 +186,11 @@ impl<'a> Parser<'a> {
                     self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
                     return Ok(Expr::new_grouping(expr));
                 }
+                TokenType::Identifier(_) => {
+                    return Ok(Expr::Variable {
+                        name: token.clone(),
+                    });
+                }
 
                 _ => (), // just let it fall-through
             };
@@ -190,7 +199,8 @@ impl<'a> Parser<'a> {
         Err(ParserError::ExpectedExpression)
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &str) -> ParserResult<&Token> {
+    // FIXME: it should be &TokenType
+    fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
             return Err(ParserError::ExpectedToken(token_type));
         }
@@ -217,6 +227,36 @@ impl<'a> Parser<'a> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expected ; after value")?;
         Ok(Stmt::Expression(expr))
+    }
+
+    fn declaration(&mut self) -> ParserResult<Stmt> {
+        if self.match_tokens(&[TokenType::Var]).is_some() {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
+    }
+
+    fn var_declaration(&mut self) -> ParserResult<Stmt> {
+        let name = self
+            .consume(
+                // FIXME: I missed this. I can only define the `a` variable
+                TokenType::Identifier(String::from("a")),
+                "Expected variable name.",
+            )?
+            .clone();
+
+        let initializer = match self.match_tokens(&[TokenType::Equal]) {
+            Some(_) => Some(self.expression()?),
+            None => None,
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expected ';' after variable declaration.",
+        )?;
+
+        Ok(Stmt::Var { name, initializer })
     }
 }
 

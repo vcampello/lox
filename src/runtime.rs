@@ -4,6 +4,7 @@ use crate::{ast::expression::Expr, interpreter::Interpreter, parser::Parser, sca
 pub struct Runtime {
     // REVIEW: convert into Result and let the caller decide what to do with each error
     pub had_error: bool,
+    interpreter: Interpreter,
 }
 
 impl Default for Runtime {
@@ -14,7 +15,10 @@ impl Default for Runtime {
 
 impl Runtime {
     pub fn new() -> Self {
-        Self { had_error: false }
+        Self {
+            had_error: false,
+            interpreter: Interpreter::new(),
+        }
     }
 
     // TODO: accept a stream
@@ -31,7 +35,6 @@ impl Runtime {
         // }
 
         let mut parser = Parser::new(tokens);
-        let interpreter = Interpreter;
 
         let ast = match parser.parse() {
             Ok(ast) => ast,
@@ -42,7 +45,7 @@ impl Runtime {
             }
         };
 
-        if let Err(e) = interpreter.interpret(&ast) {
+        if let Err(e) = self.interpreter.interpret(&ast) {
             self.had_error = true;
             eprintln!("Failed to interpret: {e}");
         };

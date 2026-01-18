@@ -17,6 +17,9 @@ pub enum Expr {
         when_false: Box<Expr>,
     },
     Grouping(Box<Expr>),
+    Variable {
+        name: Token,
+    },
 
     // Treat literals as individual expressions
     BoolLiteral(bool),
@@ -86,6 +89,7 @@ impl Expr {
             }
             Expr::StringLiteral(value) => value.clone(),
             Expr::NumberLiteral(value) => {
+                // REVIEW: could this simply be "value.to_string()"?
                 format!("{value}")
             }
             Expr::BoolLiteral(value) => {
@@ -95,6 +99,7 @@ impl Expr {
             Expr::Grouping(e) => {
                 format!("(group {})", Expr::print(e))
             }
+            Expr::Variable { name } => name.lexeme.to_string(),
         }
     }
 }
