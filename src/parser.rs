@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
                     .map(Expr::NumberLiteral),
                 TokenType::String => {
                     return Ok(Expr::StringLiteral(
-                        token.lexeme[1..token.lexeme.len()].to_string(),
+                        token.lexeme[1..token.lexeme.len() - 1].to_string(),
                     ));
                 }
                 TokenType::LeftParen => {
