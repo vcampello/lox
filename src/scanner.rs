@@ -165,11 +165,8 @@ impl<'a> Scanner<'a> {
         }
 
         // consume closing "
-        _ = self.advance();
-
-        let literal = &self.source[self.start + 1..self.current - 1];
-
-        self.add_token(TokenType::String(literal.to_string()));
+        self.advance();
+        self.add_token(TokenType::String);
     }
 
     fn handle_number(&mut self) {
@@ -197,13 +194,7 @@ impl<'a> Scanner<'a> {
             _ => (),
         };
 
-        let literal = &self.source[self.start..self.current];
-        let Ok(number) = literal.parse::<f64>() else {
-            eprintln!(" {}| failed to parse({literal})", self.line,);
-            return;
-        };
-
-        self.add_token(TokenType::Number(number));
+        self.add_token(TokenType::Number);
     }
 
     fn handle_identifier_and_keywords(&mut self) {
@@ -217,7 +208,7 @@ impl<'a> Scanner<'a> {
         // Check if it's a reserved keyword
         let token_type = match TokenType::matching_identifier(identifier) {
             Some(t) => t,
-            _ => TokenType::Identifier(identifier.to_string()),
+            _ => TokenType::Identifier,
         };
 
         self.add_token(token_type);

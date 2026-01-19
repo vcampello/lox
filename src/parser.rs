@@ -1,5 +1,4 @@
-use core::fmt;
-use std::{iter::Peekable, slice::Iter};
+use std::{fmt, iter::Peekable, slice::Iter};
 
 use crate::{
     ast::{expression::Expr, statement::Stmt},
@@ -10,6 +9,7 @@ use crate::{
 pub enum ParserError {
     ExpectedToken(TokenType),
     ExpectedExpression,
+    InvalidNumber(String),
 }
 
 impl fmt::Display for ParserError {
@@ -17,6 +17,9 @@ impl fmt::Display for ParserError {
         match self {
             Self::ExpectedToken(v) => write!(f, "Expected to find '{v}', after expression."),
             Self::ExpectedExpression => write!(f, "Expected expression."),
+            Self::InvalidNumber(number) => {
+                write!(f, "InvalidNumber({number})")
+            }
         }
     }
 }
@@ -174,26 +177,32 @@ impl<'a> Parser<'a> {
     fn primary(&mut self) -> ParserResult<Expr> {
         // NOTE: we'll bypass match_tokens to make this more readable
         if let Some(token) = self.advance() {
-            match &token.token_type {
+            return match &token.token_type {
                 TokenType::True => return Ok(Expr::BoolLiteral(true)),
                 TokenType::False => return Ok(Expr::BoolLiteral(false)),
                 TokenType::Nil => return Ok(Expr::Nil),
-                TokenType::Number(v) => return Ok(Expr::NumberLiteral(*v)),
-                TokenType::String(v) => {
-                    return Ok(Expr::StringLiteral(v.to_string()));
+                TokenType::Number => token
+                    .lexeme
+                    .parse::<f64>()
+                    .map_err(|_e| ParserError::InvalidNumber(token.lexeme.to_string()))
+                    .map(Expr::NumberLiteral),
+                TokenType::String => {
+                    return Ok(Expr::StringLiteral(
+                        token.lexeme[1..token.lexeme.len()].to_string(),
+                    ));
                 }
                 TokenType::LeftParen => {
                     let expr = self.expression()?; // must be called before consuming
                     self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
                     return Ok(Expr::new_grouping(expr));
                 }
-                TokenType::Identifier(_) => {
+                TokenType::Identifier => {
                     return Ok(Expr::Variable {
                         name: token.clone(),
                     });
                 }
 
-                _ => (), // just let it fall-through
+                _ => Err(ParserError::ExpectedExpression),
             };
         }
 
@@ -242,7 +251,7 @@ impl<'a> Parser<'a> {
         let name = self
             .consume(
                 // FIXME: I missed this. I can only define the `a` variable
-                TokenType::Identifier(String::from("a")),
+                TokenType::Identifier,
                 "Expected variable name.",
             )?
             .clone();

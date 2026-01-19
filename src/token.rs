@@ -28,9 +28,9 @@ pub enum TokenType {
     Colon,
 
     // Literals.
-    Identifier(String),
-    String(String),
-    Number(f64),
+    Identifier,
+    String,
+    Number,
 
     // Keywords.
     And,
@@ -110,9 +110,9 @@ impl fmt::Display for TokenType {
             TokenType::LessEqual => write!(f, "LessEqual"),
 
             // Literals.
-            TokenType::Identifier(v) => write!(f, "Identifier({v})"),
-            TokenType::String(v) => write!(f, "String({v})"),
-            TokenType::Number(v) => write!(f, "Number({v})"),
+            TokenType::Identifier => write!(f, "Identifier"),
+            TokenType::String => write!(f, "String"),
+            TokenType::Number => write!(f, "Number"),
 
             // Keywords.
             TokenType::And => write!(f, "And"),
