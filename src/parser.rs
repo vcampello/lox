@@ -178,29 +178,25 @@ impl<'a> Parser<'a> {
         // NOTE: we'll bypass match_tokens to make this more readable
         if let Some(token) = self.advance() {
             return match &token.token_type {
-                TokenType::True => return Ok(Expr::BoolLiteral(true)),
-                TokenType::False => return Ok(Expr::BoolLiteral(false)),
-                TokenType::Nil => return Ok(Expr::Nil),
+                TokenType::True => Ok(Expr::BoolLiteral(true)),
+                TokenType::False => Ok(Expr::BoolLiteral(false)),
+                TokenType::Nil => Ok(Expr::Nil),
                 TokenType::Number => token
                     .lexeme
                     .parse::<f64>()
                     .map_err(|_e| ParserError::InvalidNumber(token.lexeme.to_string()))
                     .map(Expr::NumberLiteral),
-                TokenType::String => {
-                    return Ok(Expr::StringLiteral(
-                        token.lexeme[1..token.lexeme.len() - 1].to_string(),
-                    ));
-                }
+                TokenType::String => Ok(Expr::StringLiteral(
+                    token.lexeme[1..token.lexeme.len() - 1].to_string(),
+                )),
                 TokenType::LeftParen => {
                     let expr = self.expression()?; // must be called before consuming
                     self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
-                    return Ok(Expr::new_grouping(expr));
+                    Ok(Expr::new_grouping(expr))
                 }
-                TokenType::Identifier => {
-                    return Ok(Expr::Variable {
-                        name: token.clone(),
-                    });
-                }
+                TokenType::Identifier => Ok(Expr::Variable {
+                    name: token.clone(),
+                }),
 
                 _ => Err(ParserError::ExpectedExpression),
             };
