@@ -55,28 +55,28 @@ pub enum TokenType {
 }
 
 impl TokenType {
-    pub fn matching_identifier(identifier: &str) -> Option<TokenType> {
-        match identifier {
+    pub fn to_identifier(keyword: &str) -> TokenType {
+        match keyword {
             // Keywords.
-            "and" => Some(TokenType::And),
-            "class" => Some(TokenType::Class),
-            "else" => Some(TokenType::Else),
-            "false" => Some(TokenType::False),
-            "fun" => Some(TokenType::Fun),
-            "for" => Some(TokenType::For),
-            "if" => Some(TokenType::If),
-            "nil" => Some(TokenType::Nil),
-            "or" => Some(TokenType::Or),
-            "print" => Some(TokenType::Print),
-            "return" => Some(TokenType::Return),
-            "super" => Some(TokenType::Super),
-            "this" => Some(TokenType::This),
-            "true" => Some(TokenType::True),
-            "var" => Some(TokenType::Var),
-            "while" => Some(TokenType::While),
+            "and" => TokenType::And,
+            "class" => TokenType::Class,
+            "else" => TokenType::Else,
+            "false" => TokenType::False,
+            "fun" => TokenType::Fun,
+            "for" => TokenType::For,
+            "if" => TokenType::If,
+            "nil" => TokenType::Nil,
+            "or" => TokenType::Or,
+            "print" => TokenType::Print,
+            "return" => TokenType::Return,
+            "super" => TokenType::Super,
+            "this" => TokenType::This,
+            "true" => TokenType::True,
+            "var" => TokenType::Var,
+            "while" => TokenType::While,
 
-            // Not an identifier
-            _ => None,
+            // Not a keyword
+            _ => TokenType::to_identifier(keyword),
         }
     }
 }

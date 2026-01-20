@@ -205,13 +205,8 @@ impl<'a> Scanner<'a> {
 
         let identifier = &self.source[self.start..self.current];
 
-        // Check if it's a reserved keyword
-        let token_type = match TokenType::matching_identifier(identifier) {
-            Some(t) => t,
-            _ => TokenType::Identifier,
-        };
-
-        self.add_token(token_type);
+        // Convert to keyword or identifier
+        self.add_token(TokenType::to_identifier(identifier));
     }
 
     fn is_identifier(c: &char) -> bool {
