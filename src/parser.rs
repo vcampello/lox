@@ -110,7 +110,7 @@ impl<'a> Parser<'a> {
     fn assignment(&mut self) -> ParserResult<Expr> {
         let expr = self.equality()?;
 
-        if let Some(equals) = dbg!(self.match_tokens(&[TokenType::Equal])) {
+        if let Some(equals) = self.match_tokens(&[TokenType::Equal]) {
             let value = self.assignment()?;
 
             return match expr {

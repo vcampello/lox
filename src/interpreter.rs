@@ -58,7 +58,9 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            env: Env::new(None),
+        }
     }
 
     pub fn interpret(&mut self, stmts: &[Stmt]) -> InterpreterResult<()> {
