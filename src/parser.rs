@@ -10,6 +10,7 @@ pub enum ParserError {
     ExpectedToken(TokenType),
     ExpectedExpression,
     InvalidNumber(String),
+    InvalidAssignmentTarget(Token),
 }
 
 impl fmt::Display for ParserError {
@@ -19,6 +20,9 @@ impl fmt::Display for ParserError {
             Self::ExpectedExpression => write!(f, "Expected expression."),
             Self::InvalidNumber(number) => {
                 write!(f, "InvalidNumber({number})")
+            }
+            Self::InvalidAssignmentTarget(token) => {
+                write!(f, "InvalidAssignmentTarget({token})")
             }
         }
     }
@@ -100,14 +104,29 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> ParserResult<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> ParserResult<Expr> {
+        let expr = self.equality()?;
+
+        if let Some(equals) = dbg!(self.match_tokens(&[TokenType::Equal])) {
+            let value = self.assignment()?;
+
+            return match expr {
+                Expr::Variable { name } => Ok(Expr::new_assignment(name, value)),
+                _ => Err(ParserError::InvalidAssignmentTarget(equals)),
+            };
+        }
+
+        Ok(expr)
     }
 
     /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
     fn equality(&mut self) -> ParserResult<Expr> {
         let mut expr = self.comparison()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::Equal, TokenType::EqualEqual]) {
+        while let Some(token) = self.match_tokens(&[TokenType::EqualEqual, TokenType::BangEqual]) {
             let operator = token;
             let right = self.comparison()?;
             expr = Expr::new_binary(expr, operator, right)

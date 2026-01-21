@@ -76,7 +76,7 @@ impl TokenType {
             "while" => TokenType::While,
 
             // Not a keyword
-            _ => TokenType::to_identifier(keyword),
+            _ => TokenType::Identifier,
         }
     }
 }

@@ -163,6 +163,12 @@ impl Interpreter {
                 Ok(v.clone())
             }
 
+            Expr::Assignment { name, value } => {
+                let result = self.evaluate(value)?;
+                self.env.define(&name.lexeme, &result);
+                Ok(result)
+            }
+
             // FIXME: remove once conditionals are added
             _ => Err(RuntimeError::Unimplemented),
         }

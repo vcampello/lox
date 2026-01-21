@@ -20,6 +20,10 @@ pub enum Expr {
     Variable {
         name: Token,
     },
+    Assignment {
+        name: Token,
+        value: Box<Expr>,
+    },
 
     // Treat literals as individual expressions
     BoolLiteral(bool),
@@ -56,6 +60,13 @@ impl Expr {
         Self::Grouping(Box::new(expr))
     }
 
+    pub fn new_assignment(name: Token, value: Expr) -> Expr {
+        Self::Assignment {
+            name,
+            value: Box::new(value),
+        }
+    }
+
     // REVIEW: this could be a trait and then there could be an AST printer
     // NOTE: I'll see how far I can get without the visitor pattern suggested in the book
     pub fn print(e: &Expr) -> String {
@@ -87,6 +98,8 @@ impl Expr {
                     Expr::print(when_false)
                 )
             }
+            Expr::Assignment { name, value } => format!("{} {}", name.lexeme, Expr::print(value)),
+
             Expr::StringLiteral(value) => value.clone(),
             Expr::NumberLiteral(value) => {
                 // REVIEW: could this simply be "value.to_string()"?

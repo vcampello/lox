@@ -19,6 +19,18 @@ impl Env {
         self.values.insert(name.to_string(), value.clone());
     }
 
+    pub fn assign(&mut self, name: &str, value: &Value) -> EnvResult<()> {
+        // WARNING: override values without any further checks
+        if self.values.contains_key(name) {
+            self.values.insert(name.to_string(), value.clone());
+            return Ok(());
+        }
+
+        Err(EnvError::UndefinedVariable {
+            name: name.to_string(),
+        })
+    }
+
     pub fn get(&self, name: &str) -> EnvResult<&Value> {
         self.values
             .get(name)
