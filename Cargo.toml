@@ -3,4 +3,11 @@ name = "lox"
 version = "0.1.0"
 edition = "2024"
 
+
+[profile.release]
+# Suggested by zamazan4ik - it doesn't matter yet, but it will when I attempt to improve performance
+# Will increase build time on releases but should reduce binary size and increase performance
+codegen-units = 1
+lto = true        # FullLTO - the most aggressive LTO version
+
 [dependencies]
