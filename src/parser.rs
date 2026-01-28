@@ -89,8 +89,11 @@ impl<'a> Parser<'a> {
     }
 
     fn check(&mut self, token_type: &TokenType) -> bool {
-        // dbg!(self.iter.peek());
         matches!(self.iter.peek(), Some(t) if t.token_type == *token_type)
+    }
+
+    fn is_eof(&mut self) -> bool {
+        self.check(&TokenType::Eof)
     }
 
     fn match_tokens(&mut self, token_types: &[TokenType]) -> Option<Token> {
@@ -236,16 +239,29 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> ParserResult<Stmt> {
-        match self.match_tokens(&[TokenType::Print]) {
-            Some(_) => self.print_stmt(),
-            None => self.expression_stmt(),
+        if self.match_tokens(&[TokenType::Print]).is_some() {
+            return self.print_stmt();
         }
+        if self.match_tokens(&[TokenType::LeftBrace]).is_some() {
+            return self.block_stmt();
+        }
+        self.expression_stmt()
     }
 
     fn print_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expected ; after value")?;
         Ok(Stmt::Print(expr))
+    }
+
+    fn block_stmt(&mut self) -> ParserResult<Stmt> {
+        let mut stmts: Vec<Stmt> = Vec::new();
+        while !self.check(&TokenType::RightBrace) && !self.is_eof() {
+            stmts.push(self.declaration()?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expected } after block")?;
+        Ok(Stmt::Block(stmts))
     }
 
     fn expression_stmt(&mut self) -> ParserResult<Stmt> {

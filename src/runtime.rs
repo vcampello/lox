@@ -34,6 +34,7 @@ impl Runtime {
         //     println!("{token}");
         // }
 
+        // dbg!(&tokens);
         let mut parser = Parser::new(tokens);
 
         let ast = match parser.parse() {
@@ -44,6 +45,7 @@ impl Runtime {
                 return;
             }
         };
+        // dbg!(&ast);
 
         if let Err(e) = self.interpreter.interpret(&ast) {
             self.had_error = true;

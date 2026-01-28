@@ -78,6 +78,15 @@ impl Interpreter {
                     };
                     self.env.define(&name.lexeme, &value);
                 }
+                Stmt::Block(stmts) => {
+                    //
+                    // let old_env = &self.env;
+                    // self.env = Env::new(Some(old_env));
+                    //
+                    // TODO: figure out how to implement the environment for this
+                    _ = self.interpret(stmts);
+                    // self.env = old_env;
+                }
             };
         }
 
