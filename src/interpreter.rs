@@ -53,13 +53,13 @@ pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
 #[derive(Debug, Default)]
 pub struct Interpreter {
-    env: Env,
+    env: Option<mut Env>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Self {
-            env: Env::new(None),
+            env: Some(Env::new(None)),
         }
     }
 
@@ -76,7 +76,8 @@ impl Interpreter {
                         Some(expr) => self.evaluate(expr)?,
                         None => Value::Nil,
                     };
-                    self.env.define(&name.lexeme, &value);
+                    // FIXME: remove unwrap
+                    self.env.unwrap().define(&name.lexeme, &value);
                 }
                 Stmt::Block(stmts) => {
                     //

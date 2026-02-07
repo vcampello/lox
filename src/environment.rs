@@ -1,57 +1,70 @@
 use crate::interpreter::Value;
-use std::collections::HashMap;
+
+type Scope = Vec<Value>;
 
 #[derive(Debug, Default)]
 pub struct Env {
-    values: HashMap<String, Value>,
-    enclosing: Option<Box<Env>>,
+    scopes: Vec<Scope>,
 }
 
 #[derive(Debug)]
 pub enum EnvError {
-    UndefinedVariable { name: String },
+    // UndefinedVariable { name: String },
+    // TODO: how can I support a variable name in this case?
+    UndefinedVariable,
+    ScopeOutOfBounds { distance: usize },
+    UndefinedGlobalScope,
 }
 
 pub type EnvResult<T> = Result<T, EnvError>;
 
 impl Env {
-    pub fn new(enclosing: Option<Env>) -> Self {
+    pub fn new() -> Self {
         Self {
-            values: HashMap::new(),
-            enclosing: enclosing.map(Box::new),
+            scopes: vec![Vec::new()],
         }
     }
 
-    pub fn define(&mut self, name: &str, value: &Value) {
-        self.values.insert(name.to_string(), value.clone());
+    pub fn begin_scope(&mut self) {
+        self.scopes.push(Vec::new());
     }
 
-    pub fn assign(&mut self, name: &str, value: &Value) -> EnvResult<()> {
-        if self.values.contains_key(name) {
-            self.values.insert(name.to_string(), value.clone());
+    pub fn end_scope(&mut self) {
+        // Never end the global scope
+        if !self.scopes.is_empty() {
+            self.scopes.pop();
+        }
+    }
+
+    pub fn define(&mut self, value: Value) -> EnvResult<()> {
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.push(value);
             return Ok(());
         }
 
-        if let Some(enclosing) = &mut self.enclosing {
-            return enclosing.assign(name, value);
-        }
-
-        Err(EnvError::UndefinedVariable {
-            name: name.to_string(),
-        })
+        // This should never happen!
+        Err(EnvError::UndefinedGlobalScope)
     }
 
-    pub fn get(&self, name: &str) -> EnvResult<&Value> {
-        if let Some(value) = self.values.get(name) {
-            return Ok(value);
+    pub fn get(&mut self, distance: usize, var_index: usize) -> EnvResult<&Value> {
+        let Some(scope) = self.scopes.get_mut(distance) else {
+            return Err(EnvError::ScopeOutOfBounds { distance });
+        };
+
+        match scope.get(var_index) {
+            Some(value) => Ok(value),
+            None => Err(EnvError::UndefinedVariable),
+        }
+    }
+
+    pub fn set(&mut self, distance: usize, value: Value) -> EnvResult<()> {
+        if distance > self.scopes.len() {
+            return Err(EnvError::ScopeOutOfBounds { distance });
         }
 
-        if let Some(enclosing) = &self.enclosing {
-            return enclosing.get(name);
-        }
-
-        Err(EnvError::UndefinedVariable {
-            name: name.to_string(),
-        })
+        let scope_idx = self.scopes.len() - distance;
+        let Some(scope) = self.scopes.get_mut(scope_idx) else {
+            Err(EnvError::UndefinedVariable)
+        };
     }
 }
