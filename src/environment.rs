@@ -1,11 +1,8 @@
 use crate::interpreter::Value;
 use std::collections::HashMap;
 
-#[derive(Debug, Default)]
-pub struct Env {
-    values: HashMap<String, Value>,
-    enclosing: Option<Box<Env>>,
-}
+// #[derive(Debug, Copy)]
+pub type Scope = HashMap<String, Value>;
 
 #[derive(Debug)]
 pub enum EnvError {
@@ -14,26 +11,44 @@ pub enum EnvError {
 
 pub type EnvResult<T> = Result<T, EnvError>;
 
+#[derive(Debug, Default)]
+pub struct Env {
+    scopes: Vec<Scope>,
+}
+
 impl Env {
-    pub fn new(enclosing: Option<Env>) -> Self {
+    pub fn new() -> Self {
         Self {
-            values: HashMap::new(),
-            enclosing: enclosing.map(Box::new),
+            scopes: vec![HashMap::new()],
         }
+    }
+
+    pub fn begin_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+
+    pub fn end_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
+
+    fn last_scope(&mut self) -> &mut Scope {
+        self.scopes
+            .last_mut()
+            .expect("Scope is undefined. This should never happen")
     }
 
     pub fn define(&mut self, name: &str, value: &Value) {
-        self.values.insert(name.to_string(), value.clone());
+        self.last_scope().insert(name.to_string(), value.clone());
     }
 
     pub fn assign(&mut self, name: &str, value: &Value) -> EnvResult<()> {
-        if self.values.contains_key(name) {
-            self.values.insert(name.to_string(), value.clone());
-            return Ok(());
-        }
-
-        if let Some(enclosing) = &mut self.enclosing {
-            return enclosing.assign(name, value);
+        for scope in self.scopes.iter_mut().rev() {
+            if scope.contains_key(name) {
+                scope.insert(name.to_string(), value.clone());
+                return Ok(());
+            }
         }
 
         Err(EnvError::UndefinedVariable {
@@ -42,12 +57,10 @@ impl Env {
     }
 
     pub fn get(&self, name: &str) -> EnvResult<&Value> {
-        if let Some(value) = self.values.get(name) {
-            return Ok(value);
-        }
-
-        if let Some(enclosing) = &self.enclosing {
-            return enclosing.get(name);
+        for scope in self.scopes.iter().rev() {
+            if let Some(value) = scope.get(name) {
+                return Ok(value);
+            }
         }
 
         Err(EnvError::UndefinedVariable {

@@ -58,9 +58,7 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self {
-            env: Env::new(None),
-        }
+        Self { env: Env::new() }
     }
 
     pub fn interpret(&mut self, stmts: &[Stmt]) -> InterpreterResult<()> {
@@ -79,13 +77,9 @@ impl Interpreter {
                     self.env.define(&name.lexeme, &value);
                 }
                 Stmt::Block(stmts) => {
-                    //
-                    // let old_env = &self.env;
-                    // self.env = Env::new(Some(old_env));
-                    //
-                    // TODO: figure out how to implement the environment for this
+                    self.env.begin_scope();
                     _ = self.interpret(stmts);
-                    // self.env = old_env;
+                    self.env.end_scope();
                 }
             };
         }
