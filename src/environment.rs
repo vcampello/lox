@@ -28,6 +28,7 @@ impl Env {
     }
 
     pub fn end_scope(&mut self) {
+        // do not allow global scope to be dropped
         if self.scopes.len() > 1 {
             self.scopes.pop();
         }
