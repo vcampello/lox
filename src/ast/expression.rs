@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn unary() {
-        let operator = Token::new(TokenType::Minus, String::from("-"), 1);
+        let operator = Token::new(TokenType::Minus, String::from("-"), 1, 1);
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_unary(operator, literal);
         let result = Expr::print(&e);
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn binary() {
-        let operator = Token::new(TokenType::Minus, String::from("-"), 1);
+        let operator = Token::new(TokenType::Minus, String::from("-"), 1, 1);
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_binary(literal.clone(), operator, literal);
         let result = Expr::print(&e);
@@ -158,12 +158,12 @@ mod tests {
     #[test]
     fn nested() {
         let left = Expr::new_unary(
-            Token::new(TokenType::Minus, "-".to_string(), 1),
+            Token::new(TokenType::Minus, "-".to_string(), 1, 1),
             Expr::NumberLiteral(123.0),
         );
         let right = Expr::new_grouping(Expr::NumberLiteral(45.67));
 
-        let operator = Token::new(TokenType::Star, "*".to_string(), 1);
+        let operator = Token::new(TokenType::Star, "*".to_string(), 1, 1);
 
         let e = Expr::new_binary(left, operator, right);
         let result = Expr::print(&e);

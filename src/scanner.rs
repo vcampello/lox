@@ -24,6 +24,9 @@ pub struct Scanner<'a> {
 
     /// Current line in the source code
     line: usize,
+
+    /// Current column in the source code
+    col: usize,
 }
 
 impl<'a> Scanner<'a> {
@@ -36,6 +39,7 @@ impl<'a> Scanner<'a> {
             start: 0,
             current: 0,
             line: 1,
+            col: 1,
         }
     }
 
@@ -83,9 +87,7 @@ impl<'a> Scanner<'a> {
                 (' ', _) => (),
                 ('\t', _) => (),
                 ('\r', _) => (),
-                ('\n', _) => {
-                    self.line += 1;
-                }
+                ('\n', _) => self.increase_line(),
 
                 // literals
                 ('"', _) => self.handle_string(),
@@ -105,9 +107,14 @@ impl<'a> Scanner<'a> {
         &self.tokens
     }
 
+    fn increase_line(&mut self) {
+        self.line += 1;
+        self.col = 1;
+    }
+
     fn add_token(&mut self, token_type: TokenType) {
         let lexeme = &self.source[self.start..self.current];
-        let token = Token::new(token_type, lexeme.to_string(), self.line);
+        let token = Token::new(token_type, lexeme.to_string(), self.line, self.col);
         self.tokens.push(token);
     }
 
@@ -127,6 +134,7 @@ impl<'a> Scanner<'a> {
         // prevent out of bound lookups when indexing the source array
         if c.is_some() {
             self.current += 1;
+            self.col += 1;
         }
 
         c
@@ -151,7 +159,7 @@ impl<'a> Scanner<'a> {
         while let Some(c) = self.chars.peek() {
             match c {
                 // Multi-line comment
-                '\n' => self.line += 1,
+                '\n' => self.increase_line(),
                 '"' => break,
                 _ => (),
             };

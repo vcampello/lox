@@ -139,22 +139,32 @@ impl fmt::Display for TokenType {
 }
 
 #[derive(Debug, Clone)]
+pub struct Span {
+    line: usize,
+    col: usize,
+}
+
+impl Span {
+    pub fn new(line: usize, col: usize) -> Self {
+        Self { line, col }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    // REFACTOR: this needs to be generic. Maybe the TokenType needs to have the payload?
-    // The book uses `Object literal` because it represents the value of the token - e.g. a number
-    // or string for a variable.
     pub line: usize,
-    // TODO: add column num
+    pub span: Span,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, line: usize) -> Self {
+    pub fn new(token_type: TokenType, lexeme: String, line: usize, col: usize) -> Self {
         Self {
             token_type,
             lexeme,
             line,
+            span: Span::new(line, col),
         }
     }
 }
