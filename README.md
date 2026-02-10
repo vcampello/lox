@@ -2,6 +2,16 @@
 
 A work-in-progress Rust implementation of the Lox programming language from [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom.
 
+## Goals
+
+To implement the following:
+
+- Interpreter
+- Formatter
+- LSP
+- Debugger
+- MCP server into each of the above
+
 ## Status
 
 🚧 This is an educational project and a work in progress.
