@@ -170,7 +170,13 @@ impl Interpreter {
 
             Expr::Assignment { name, value } => {
                 let result = self.evaluate(value)?;
-                self.env.define(&name.lexeme, &result);
+                self.env.assign(&name.lexeme, &result).map_err(|_e| {
+                    // FIXME: this error handling is a mess but let's leave it here until I get to
+                    RuntimeError::UndefinedVariable {
+                        name: name.lexeme.to_string(),
+                    }
+                })?;
+
                 Ok(result)
             }
 
