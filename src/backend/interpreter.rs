@@ -78,7 +78,7 @@ impl Interpreter {
                 }
                 Stmt::Block(stmts) => {
                     self.env.begin_scope();
-                    _ = self.interpret(stmts);
+                    self.interpret(stmts)?;
                     self.env.end_scope();
                 }
             };
