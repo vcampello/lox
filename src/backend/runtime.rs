@@ -1,4 +1,7 @@
-use crate::{ast::expression::Expr, interpreter::Interpreter, parser::Parser, scanner::Scanner};
+use crate::{
+    backend::Interpreter,
+    frontend::{Parser, Scanner},
+};
 
 #[derive(Debug)]
 pub struct Runtime {

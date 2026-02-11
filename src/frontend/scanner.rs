@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-use crate::token::{Token, TokenType};
+use super::token::{Token, TokenType};
 
 pub struct Scanner<'a> {
     tokens: Vec<Token>,

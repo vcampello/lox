@@ -1,9 +1,8 @@
 use std::{fmt, iter::Peekable, slice::Iter};
 
-use crate::{
-    ast::{expression::Expr, statement::Stmt},
-    token::{Token, TokenType},
-};
+use super::token::{Token, TokenType};
+use crate::ast::expr::Expr;
+use crate::ast::stmt::Stmt;
 
 #[derive(Debug, Clone)]
 pub enum ParserError {
@@ -298,17 +297,5 @@ impl<'a> Parser<'a> {
         )?;
 
         Ok(Stmt::Var { name, initializer })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn lifetime() {
-        let tokens: Vec<Token> = Vec::new();
-        let _parser = Parser::new(&tokens);
-        todo!();
     }
 }

@@ -1,9 +1,9 @@
 use std::fmt;
 
 use crate::{
-    ast::{expression::Expr, statement::Stmt},
-    environment::Env,
-    token::TokenType,
+    ast::{Expr, Stmt},
+    backend::Env,
+    frontend::TokenType,
 };
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]

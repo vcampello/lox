@@ -4,7 +4,7 @@ use std::{
     process,
 };
 
-use lox::runtime::Runtime;
+use lox::backend::Runtime;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

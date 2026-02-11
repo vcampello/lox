@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::frontend::token::Token;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -120,7 +120,7 @@ impl Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::*;
+    use crate::frontend::{Token, TokenType};
 
     #[test]
     fn unary() {
