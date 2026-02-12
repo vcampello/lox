@@ -4,7 +4,6 @@ use super::token::{Token, TokenType};
 
 pub struct Scanner<'a> {
     tokens: Vec<Token>,
-    // TODO: convert to vec as nth is expensive
     source: &'a str,
 
     /// A shared iterator over the source
@@ -30,7 +29,6 @@ pub struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    // TODO: accept a stream
     pub fn new(source: &'a str) -> Self {
         Self {
             tokens: Vec::new(),

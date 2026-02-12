@@ -140,13 +140,17 @@ impl fmt::Display for TokenType {
 
 #[derive(Debug, Clone)]
 pub struct Span {
-    line: usize,
-    col: usize,
+    pub line: usize,
+    pub col: usize,
 }
 
 impl Span {
     pub fn new(line: usize, col: usize) -> Self {
         Self { line, col }
+    }
+
+    pub fn to_location(&self) -> String {
+        format!("{}, {}", self.line, self.col)
     }
 }
 
