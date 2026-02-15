@@ -1,5 +1,7 @@
 use std::{iter::Peekable, str::Chars};
 
+use crate::frontend::Span;
+
 use super::token::{Token, TokenType};
 
 pub struct Scanner<'a> {
@@ -41,6 +43,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    // FIXME: plug ScannerResult
     pub fn scan_tokens(&mut self) -> &Vec<Token> {
         // scan each character
         while let Some(char) = self.advance() {
@@ -105,6 +108,10 @@ impl<'a> Scanner<'a> {
         &self.tokens
     }
 
+    fn to_span(&self) -> Span {
+        Span::new(self.line, self.col)
+    }
+
     fn increase_line(&mut self) {
         self.line += 1;
         self.col = 1;
@@ -112,7 +119,7 @@ impl<'a> Scanner<'a> {
 
     fn add_token(&mut self, token_type: TokenType) {
         let lexeme = &self.source[self.start..self.current];
-        let token = Token::new(token_type, lexeme.to_string(), self.line, self.col);
+        let token = Token::new(token_type, lexeme.to_string(), self.to_span());
         self.tokens.push(token);
     }
 

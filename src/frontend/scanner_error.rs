@@ -20,9 +20,10 @@ impl fmt::Display for ScannerErrorKind {
     }
 }
 
+// TODO: properly implement the Error trait https://doc.rust-lang.org/std/error/trait.Error.html
 pub struct ScannerError {
-    kind: ScannerErrorKind,
-    span: Span,
+    pub kind: ScannerErrorKind,
+    pub span: Span,
 }
 
 impl fmt::Display for ScannerError {
@@ -30,4 +31,3 @@ impl fmt::Display for ScannerError {
         write!(f, "{} at {}", self.span.to_location(), self.kind)
     }
 }
-// TODO: properly implement the Error trait https://doc.rust-lang.org/std/error/trait.Error.html

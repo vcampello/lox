@@ -158,23 +158,21 @@ impl Span {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub line: usize,
     pub span: Span,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, line: usize, col: usize) -> Self {
+    pub fn new(token_type: TokenType, lexeme: String, span: Span) -> Self {
         Self {
             token_type,
             lexeme,
-            line,
-            span: Span::new(line, col),
+            span,
         }
     }
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, " {}| {}", self.line, self.token_type)
+        write!(f, " {}| {}", self.span.to_location(), self.token_type)
     }
 }
