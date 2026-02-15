@@ -8,7 +8,6 @@ use lox::Lox;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    dbg!(&args);
     match args.len() {
         1 => run_prompt(),
         2 => run_file(&args[1]),
@@ -40,7 +39,10 @@ fn run_prompt() {
                     continue;
                 }
 
-                rtm.run(source);
+                // TODO: refactor this entire file
+                if let Err(error) = rtm.run(source) {
+                    eprintln!("Error: {error:#?}");
+                }
             }
             Err(e) => {
                 eprintln!("Error: {e}");
