@@ -3,7 +3,7 @@ use std::{iter::Peekable, slice::Iter};
 use super::token::{Token, TokenType};
 use crate::ast::expr::Expr;
 use crate::ast::stmt::Stmt;
-use crate::frontend::{ParserError, ParserErrorKind};
+use crate::frontend::ParserError;
 
 pub type ParserResult<T> = Result<T, ParserError>;
 
@@ -92,9 +92,7 @@ impl<'a> Parser<'a> {
 
             return match expr {
                 Expr::Variable { name } => Ok(Expr::new_assignment(name, value)),
-                _ => Err(ParserError {
-                    kind: ParserErrorKind::InvalidAssignmentTarget(equals),
-                }),
+                _ => Err(ParserError::InvalidAssignmentTarget { token: equals }),
             };
         }
 
@@ -173,6 +171,7 @@ impl<'a> Parser<'a> {
 
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
+        // FIXME: is there a better way to enforce always having something?
         // NOTE: we'll bypass match_tokens to make this more readable
         if let Some(token) = self.advance() {
             return match &token.token_type {
@@ -182,8 +181,8 @@ impl<'a> Parser<'a> {
                 TokenType::Number => token
                     .lexeme
                     .parse::<f64>()
-                    .map_err(|_| ParserError {
-                        kind: ParserErrorKind::InvalidAssignmentTarget(token.clone()),
+                    .map_err(|_| ParserError::InvalidAssignmentTarget {
+                        token: token.clone(),
                     })
                     .map(Expr::NumberLiteral),
                 TokenType::String => Ok(Expr::StringLiteral(
@@ -198,23 +197,17 @@ impl<'a> Parser<'a> {
                     name: token.clone(),
                 }),
 
-                _ => Err(ParserError {
-                    kind: ParserErrorKind::ExpectedExpression,
-                }),
+                _ => Err(ParserError::ExpectedExpression),
             };
         }
 
-        Err(ParserError {
-            kind: ParserErrorKind::ExpectedExpression,
-        })
+        Err(ParserError::ExpectedExpression)
     }
 
     // FIXME: it should be &TokenType
     fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
-            return Err(ParserError {
-                kind: ParserErrorKind::ExpectedToken(token_type),
-            });
+            return Err(ParserError::ExpectedToken { token_type });
         }
 
         // TODO: improve this. Maybe some kind of map?

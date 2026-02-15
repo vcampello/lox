@@ -1,34 +1,35 @@
-use std::fmt;
-
-pub type RuntimeResult<T> = Result<T, RuntimeError>;
+use crate::ast::Expr;
 
 #[derive(Debug)]
-pub struct RuntimeError {
-    pub kind: RuntimeErrorKind,
+pub enum RuntimeError {
+    Interpreter(InterpreterError),
+    Environment(EnvironmentError),
 }
 
 #[derive(Debug)]
-pub enum RuntimeErrorKind {
-    // TODO: add meaningful data
+pub enum InterpreterError {
     InvalidOperation,
     InvalidArithmeticOperation,
-    Unimplemented,
+    Unimplemented { expr: Expr },
     UndefinedVariable { name: String },
 }
 
-impl fmt::Display for RuntimeErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RuntimeErrorKind::InvalidOperation => write!(f, "InvalidOperation"),
-            RuntimeErrorKind::InvalidArithmeticOperation => write!(f, "InvalidArithmeticOperation"),
-            RuntimeErrorKind::UndefinedVariable { name } => write!(f, "UndefinedVariable({name})"),
-            RuntimeErrorKind::Unimplemented => write!(f, "Unimplemented"),
-        }
+#[derive(Debug)]
+pub enum EnvironmentError {
+    UndefinedVariable { name: String },
+}
+
+// -----------------------------------------------------------------------------
+// automatic conversion
+// -----------------------------------------------------------------------------
+impl From<InterpreterError> for RuntimeError {
+    fn from(value: InterpreterError) -> Self {
+        Self::Interpreter(value)
     }
 }
 
-impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RuntimeError: {}", self.kind)
+impl From<EnvironmentError> for RuntimeError {
+    fn from(value: EnvironmentError) -> Self {
+        Self::Environment(value)
     }
 }

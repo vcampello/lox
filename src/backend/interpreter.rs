@@ -1,8 +1,8 @@
 use std::fmt;
 
+use super::{Env, InterpreterError};
 use crate::{
     ast::{Expr, Stmt},
-    backend::{Env, RuntimeError, RuntimeErrorKind},
     frontend::TokenType,
 };
 
@@ -25,7 +25,7 @@ impl fmt::Display for Value {
     }
 }
 
-pub type InterpreterResult<T> = Result<T, RuntimeError>;
+pub type InterpreterResult<T> = Result<T, InterpreterError>;
 
 #[derive(Debug, Default)]
 pub struct Interpreter {
@@ -80,9 +80,7 @@ impl Interpreter {
                         let is_true = Interpreter::is_truthy(&v);
                         Ok(Value::Bool(!is_true))
                     }
-                    _ => Err(RuntimeError {
-                        kind: RuntimeErrorKind::InvalidOperation,
-                    }),
+                    _ => Err(InterpreterError::InvalidOperation),
                 }
             }
 
@@ -129,9 +127,7 @@ impl Interpreter {
                     (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
                     (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
-                    _ => Err(RuntimeError {
-                        kind: RuntimeErrorKind::InvalidOperation,
-                    }),
+                    _ => Err(InterpreterError::InvalidOperation),
                 }
             }
 
@@ -141,10 +137,8 @@ impl Interpreter {
                     .get(&name.lexeme)
                     // FIXME: this error handling is a mess but let's leave it here until I get to
                     // the rewrite
-                    .map_err(|_| RuntimeError {
-                        kind: RuntimeErrorKind::UndefinedVariable {
-                            name: name.lexeme.to_string(),
-                        },
+                    .map_err(|_| InterpreterError::UndefinedVariable {
+                        name: name.lexeme.to_string(),
                     })?;
 
                 Ok(v.clone())
@@ -152,23 +146,18 @@ impl Interpreter {
 
             Expr::Assignment { name, value } => {
                 let result = self.evaluate(value)?;
-                self.env
-                    .assign(&name.lexeme, &result)
-                    .map_err(|_| RuntimeError {
+                self.env.assign(&name.lexeme, &result).map_err(|_|
                         // FIXME: this error handling is a mess but let's leave it here until I get to
                         // the rewrite
-                        kind: RuntimeErrorKind::UndefinedVariable {
-                            name: name.lexeme.to_string(),
-                        },
+                         InterpreterError::UndefinedVariable {
+                            name: name.lexeme.to_string()
                     })?;
 
                 Ok(result)
             }
 
             // FIXME: remove once conditionals are added
-            _ => Err(RuntimeError {
-                kind: RuntimeErrorKind::Unimplemented,
-            }),
+            _ => Err(InterpreterError::Unimplemented { expr: expr.clone() }),
         }
     }
 

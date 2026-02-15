@@ -1,15 +1,9 @@
-use crate::backend::Value;
+use super::{EnvironmentError, Value};
 use std::collections::HashMap;
 
-// #[derive(Debug, Copy)]
 pub type Scope = HashMap<String, Value>;
 
-#[derive(Debug)]
-pub enum EnvError {
-    UndefinedVariable { name: String },
-}
-
-pub type EnvResult<T> = Result<T, EnvError>;
+pub type EnvResult<T> = Result<T, EnvironmentError>;
 
 #[derive(Debug, Default)]
 pub struct Env {
@@ -52,7 +46,7 @@ impl Env {
             }
         }
 
-        Err(EnvError::UndefinedVariable {
+        Err(EnvironmentError::UndefinedVariable {
             name: name.to_string(),
         })
     }
@@ -64,7 +58,7 @@ impl Env {
             }
         }
 
-        Err(EnvError::UndefinedVariable {
+        Err(EnvironmentError::UndefinedVariable {
             name: name.to_string(),
         })
     }

@@ -1,6 +1,6 @@
 // TODO: properly implement the Error trait https://doc.rust-lang.org/std/error/trait.Error.html
 use crate::{
-    backend::RuntimeError,
+    backend::{EnvironmentError, InterpreterError, RuntimeError},
     frontend::{ParserError, SyntaxError},
 };
 
@@ -25,10 +25,20 @@ impl From<RuntimeError> for LoxError {
     }
 }
 
-// NOTE: it may be better to implement package specific functions
-// to convert errors from lower -> upper domains
 impl From<ParserError> for LoxError {
     fn from(value: ParserError) -> Self {
         Self::Syntax(value.into())
+    }
+}
+
+impl From<EnvironmentError> for LoxError {
+    fn from(value: EnvironmentError) -> Self {
+        Self::Runtime(value.into())
+    }
+}
+
+impl From<InterpreterError> for LoxError {
+    fn from(value: InterpreterError) -> Self {
+        Self::Runtime(value.into())
     }
 }

@@ -3,26 +3,22 @@ use super::token::{Token, TokenType};
 pub type ScannerResult<T> = Result<T, SyntaxError>;
 
 #[derive(Debug)]
-pub struct SyntaxError {
-    pub kind: SyntaxErrorKind,
-}
-
-#[derive(Debug)]
-pub enum SyntaxErrorKind {
+pub enum SyntaxError {
     Parser(ParserError),
+    Scanner(ScannerError),
 }
 
 #[derive(Debug)]
-pub struct ParserError {
-    pub kind: ParserErrorKind,
+pub enum ScannerError {
+    // TODO: add scanner errors
 }
 
 #[derive(Debug)]
-pub enum ParserErrorKind {
-    ExpectedToken(TokenType),
+pub enum ParserError {
+    ExpectedToken { token_type: TokenType },
     ExpectedExpression,
-    InvalidNumber(String),
-    InvalidAssignmentTarget(Token),
+    InvalidNumber { lexme: String },
+    InvalidAssignmentTarget { token: Token },
 }
 
 // -----------------------------------------------------------------------------
@@ -30,8 +26,12 @@ pub enum ParserErrorKind {
 // -----------------------------------------------------------------------------
 impl From<ParserError> for SyntaxError {
     fn from(value: ParserError) -> Self {
-        Self {
-            kind: SyntaxErrorKind::Parser(value),
-        }
+        Self::Parser(value)
+    }
+}
+
+impl From<ScannerError> for SyntaxError {
+    fn from(value: ScannerError) -> Self {
+        Self::Scanner(value)
     }
 }
