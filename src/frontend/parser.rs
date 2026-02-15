@@ -1,31 +1,9 @@
-use std::{fmt, iter::Peekable, slice::Iter};
+use std::{iter::Peekable, slice::Iter};
 
 use super::token::{Token, TokenType};
 use crate::ast::expr::Expr;
 use crate::ast::stmt::Stmt;
-
-#[derive(Debug, Clone)]
-pub enum ParserError {
-    ExpectedToken(TokenType),
-    ExpectedExpression,
-    InvalidNumber(String),
-    InvalidAssignmentTarget(Token),
-}
-
-impl fmt::Display for ParserError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ExpectedToken(v) => write!(f, "Expected to find '{v}', after expression."),
-            Self::ExpectedExpression => write!(f, "Expected expression."),
-            Self::InvalidNumber(number) => {
-                write!(f, "InvalidNumber({number})")
-            }
-            Self::InvalidAssignmentTarget(token) => {
-                write!(f, "InvalidAssignmentTarget({token})")
-            }
-        }
-    }
-}
+use crate::frontend::{ParserError, ParserErrorKind};
 
 pub type ParserResult<T> = Result<T, ParserError>;
 
@@ -40,18 +18,15 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // FIXME: does this error need to cross this module's boundary?
     pub fn parse(&mut self) -> ParserResult<Vec<Stmt>> {
         let mut stmts = Vec::new();
 
         while matches!(self.iter.peek(), Some(token) if token.token_type != TokenType::Eof) {
-            // TODO: add error handling
             match self.declaration() {
                 Ok(stmt) => stmts.push(stmt),
                 Err(e) => {
-                    eprintln!("{e}");
-                    // move to next statement
                     self.sychronise();
+                    return Err(e);
                 }
             }
         }
@@ -117,7 +92,9 @@ impl<'a> Parser<'a> {
 
             return match expr {
                 Expr::Variable { name } => Ok(Expr::new_assignment(name, value)),
-                _ => Err(ParserError::InvalidAssignmentTarget(equals)),
+                _ => Err(ParserError {
+                    kind: ParserErrorKind::InvalidAssignmentTarget(equals),
+                }),
             };
         }
 
@@ -205,7 +182,9 @@ impl<'a> Parser<'a> {
                 TokenType::Number => token
                     .lexeme
                     .parse::<f64>()
-                    .map_err(|_e| ParserError::InvalidNumber(token.lexeme.to_string()))
+                    .map_err(|_| ParserError {
+                        kind: ParserErrorKind::InvalidAssignmentTarget(token.clone()),
+                    })
                     .map(Expr::NumberLiteral),
                 TokenType::String => Ok(Expr::StringLiteral(
                     token.lexeme[1..token.lexeme.len() - 1].to_string(),
@@ -219,17 +198,23 @@ impl<'a> Parser<'a> {
                     name: token.clone(),
                 }),
 
-                _ => Err(ParserError::ExpectedExpression),
+                _ => Err(ParserError {
+                    kind: ParserErrorKind::ExpectedExpression,
+                }),
             };
         }
 
-        Err(ParserError::ExpectedExpression)
+        Err(ParserError {
+            kind: ParserErrorKind::ExpectedExpression,
+        })
     }
 
     // FIXME: it should be &TokenType
     fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
-            return Err(ParserError::ExpectedToken(token_type));
+            return Err(ParserError {
+                kind: ParserErrorKind::ExpectedToken(token_type),
+            });
         }
 
         // TODO: improve this. Maybe some kind of map?

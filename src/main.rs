@@ -4,7 +4,7 @@ use std::{
     process,
 };
 
-use lox::backend::Runtime;
+use lox::Lox;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -21,7 +21,7 @@ fn main() {
 
 fn run_prompt() {
     println!("Lox REPL");
-    let mut rtm = Runtime::new();
+    let mut rtm = Lox::new();
 
     let mut buf = String::new();
     let stdin = io::stdin();
@@ -54,15 +54,16 @@ fn run_prompt() {
 }
 
 fn run_file(path: &str) {
-    let mut rtm = Runtime::new();
+    let mut rtm = Lox::new();
 
     let Ok(src) = fs::read_to_string(path) else {
         eprintln!("Failed to read {path}");
         process::exit(65)
     };
 
-    rtm.run(&src);
-    if rtm.had_error {
+    // TODO: implement Reporter::report_error;
+    if let Err(error) = rtm.run(&src) {
+        eprintln!("{error:#?}");
         process::exit(65);
     }
     // Chapter 7 adds something along the lines of `had_runtime_error` => exit(70)

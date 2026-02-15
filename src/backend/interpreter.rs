@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     ast::{Expr, Stmt},
-    backend::Env,
+    backend::{Env, RuntimeError, RuntimeErrorKind},
     frontend::TokenType,
 };
 
@@ -21,30 +21,6 @@ impl fmt::Display for Value {
             Self::Number(v) => write!(f, "{v}"),
             Self::Bool(v) => write!(f, "{v}"),
             Self::Nil => write!(f, "nil"),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum RuntimeError {
-    // TODO: read https://doc.rust-lang.org/std/error/trait.Error.html
-    // TODO: add context
-    // TODO: this should probably be a combination of top level errors with different payloads.
-    // e.g. InvalidExpression(expr)
-    // e.g. InvalidOperation(...)
-    InvalidOperation,
-    InvalidArithmeticOperation,
-    Unimplemented,
-    UndefinedVariable { name: String },
-}
-
-impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RuntimeError::InvalidOperation => write!(f, "InvalidOperation"),
-            RuntimeError::InvalidArithmeticOperation => write!(f, "InvalidArithmeticOperation"),
-            RuntimeError::UndefinedVariable { name } => write!(f, "UndefinedVariable({name})"),
-            RuntimeError::Unimplemented => write!(f, "Unimplemented"),
         }
     }
 }
@@ -104,7 +80,9 @@ impl Interpreter {
                         let is_true = Interpreter::is_truthy(&v);
                         Ok(Value::Bool(!is_true))
                     }
-                    _ => Err(RuntimeError::InvalidOperation),
+                    _ => Err(RuntimeError {
+                        kind: RuntimeErrorKind::InvalidOperation,
+                    }),
                 }
             }
 
@@ -151,7 +129,9 @@ impl Interpreter {
                     (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
                     (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
-                    _ => Err(RuntimeError::InvalidOperation),
+                    _ => Err(RuntimeError {
+                        kind: RuntimeErrorKind::InvalidOperation,
+                    }),
                 }
             }
 
@@ -161,8 +141,10 @@ impl Interpreter {
                     .get(&name.lexeme)
                     // FIXME: this error handling is a mess but let's leave it here until I get to
                     // the rewrite
-                    .map_err(|_e| RuntimeError::UndefinedVariable {
-                        name: name.lexeme.to_string(),
+                    .map_err(|_| RuntimeError {
+                        kind: RuntimeErrorKind::UndefinedVariable {
+                            name: name.lexeme.to_string(),
+                        },
                     })?;
 
                 Ok(v.clone())
@@ -170,18 +152,23 @@ impl Interpreter {
 
             Expr::Assignment { name, value } => {
                 let result = self.evaluate(value)?;
-                self.env.assign(&name.lexeme, &result).map_err(|_e| {
-                    // FIXME: this error handling is a mess but let's leave it here until I get to
-                    RuntimeError::UndefinedVariable {
-                        name: name.lexeme.to_string(),
-                    }
-                })?;
+                self.env
+                    .assign(&name.lexeme, &result)
+                    .map_err(|_| RuntimeError {
+                        // FIXME: this error handling is a mess but let's leave it here until I get to
+                        // the rewrite
+                        kind: RuntimeErrorKind::UndefinedVariable {
+                            name: name.lexeme.to_string(),
+                        },
+                    })?;
 
                 Ok(result)
             }
 
             // FIXME: remove once conditionals are added
-            _ => Err(RuntimeError::Unimplemented),
+            _ => Err(RuntimeError {
+                kind: RuntimeErrorKind::Unimplemented,
+            }),
         }
     }
 
