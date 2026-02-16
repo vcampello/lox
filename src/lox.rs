@@ -26,7 +26,7 @@ impl Lox {
 
     pub fn run(&mut self, src: &str) -> LoxResult<()> {
         let mut scanner = Scanner::new(src);
-        let tokens = scanner.scan_tokens();
+        let tokens = scanner.scan_tokens()?;
         let mut parser = Parser::new(tokens);
         let stmts = parser.parse()?;
         self.interpreter.interpret(&stmts)?;

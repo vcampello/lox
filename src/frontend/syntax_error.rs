@@ -1,7 +1,7 @@
+use crate::frontend::Span;
+
 use super::token::{Token, TokenType};
 use thiserror::Error;
-
-pub type ScannerResult<T> = Result<T, SyntaxError>;
 
 #[derive(Error, Debug)]
 pub enum SyntaxError {
@@ -14,7 +14,11 @@ pub enum SyntaxError {
 
 #[derive(Error, Debug)]
 pub enum ScannerError {
-    // TODO: add scanner errors
+    #[error("Unknown token: {token} at {}", span.to_location())]
+    UnknownToken { token: char, span: Span },
+
+    #[error("Unterminated string at {}", span.to_location())]
+    UnterminatedString { span: Span },
 }
 
 #[derive(Error, Debug)]

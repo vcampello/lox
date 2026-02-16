@@ -1,7 +1,6 @@
-// TODO: properly implement the Error trait https://doc.rust-lang.org/std/error/trait.Error.html
 use crate::{
     backend::RuntimeError,
-    frontend::{ParserError, SyntaxError},
+    frontend::{ParserError, ScannerError, SyntaxError},
 };
 use thiserror::Error;
 
@@ -19,6 +18,12 @@ pub enum LoxError {
 // -----------------------------------------------------------------------------
 impl From<ParserError> for LoxError {
     fn from(value: ParserError) -> Self {
+        Self::Syntax(value.into())
+    }
+}
+
+impl From<ScannerError> for LoxError {
+    fn from(value: ScannerError) -> Self {
         Self::Syntax(value.into())
     }
 }

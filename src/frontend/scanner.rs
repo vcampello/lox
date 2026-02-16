@@ -1,8 +1,10 @@
 use std::{iter::Peekable, str::Chars};
 
-use crate::frontend::Span;
+use crate::frontend::{ScannerError, Span};
 
 use super::token::{Token, TokenType};
+
+pub type ScannerResult<T> = Result<T, ScannerError>;
 
 pub struct Scanner<'a> {
     tokens: Vec<Token>,
@@ -44,7 +46,7 @@ impl<'a> Scanner<'a> {
     }
 
     // FIXME: plug ScannerResult
-    pub fn scan_tokens(&mut self) -> &Vec<Token> {
+    pub fn scan_tokens(&mut self) -> ScannerResult<&Vec<Token>> {
         // scan each character
         while let Some(char) = self.advance() {
             // Look at the current and next character
@@ -91,12 +93,17 @@ impl<'a> Scanner<'a> {
                 ('\n', _) => self.increase_line(),
 
                 // literals
-                ('"', _) => self.handle_string(),
+                ('"', _) => self.handle_string()?,
                 (char, _) if char.is_ascii_digit() => self.handle_number(),
                 (char, _) if Scanner::is_identifier(&char) => self.handle_identifier_and_keywords(),
 
                 // REFACTOR: there's some shared error handling between the scanner and the runtime
-                (token, _) => eprintln!(" {}| Unknown token: {token}", self.line),
+                (token, _) => {
+                    return Err(ScannerError::UnknownToken {
+                        token,
+                        span: self.to_span(),
+                    });
+                }
             };
 
             // set lexeme start
@@ -105,7 +112,7 @@ impl<'a> Scanner<'a> {
 
         self.add_token(TokenType::Eof);
 
-        &self.tokens
+        Ok(&self.tokens)
     }
 
     fn to_span(&self) -> Span {
@@ -160,7 +167,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn handle_string(&mut self) {
+    fn handle_string(&mut self) -> ScannerResult<()> {
         while let Some(c) = self.chars.peek() {
             match c {
                 // Multi-line comment
@@ -172,14 +179,16 @@ impl<'a> Scanner<'a> {
         }
 
         if self.chars.peek().is_none() {
-            // REFACTOR: search for eprintln in this file and consolidate them
-            eprintln!(" {}| Unterminated string.", self.line);
-            return;
+            return Err(ScannerError::UnterminatedString {
+                span: self.to_span(),
+            });
         }
 
         // consume closing "
         self.advance();
         self.add_token(TokenType::String);
+
+        Ok(())
     }
 
     fn handle_number(&mut self) {
