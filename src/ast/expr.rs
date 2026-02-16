@@ -129,13 +129,8 @@ impl Expr {
             Expr::Assignment { name, value } => format!("{} {}", name.lexeme, Expr::print(value)),
 
             Expr::StringLiteral(value) => value.clone(),
-            Expr::NumberLiteral(value) => {
-                // REVIEW: could this simply be "value.to_string()"?
-                format!("{value}")
-            }
-            Expr::BoolLiteral(value) => {
-                format!("{value}")
-            }
+            Expr::NumberLiteral(value) => value.to_string(),
+            Expr::BoolLiteral(value) => value.to_string(),
             Expr::Nil => "nil".to_string(),
             Expr::Grouping(e) => {
                 format!("(group {})", Expr::print(e))
