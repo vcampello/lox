@@ -32,6 +32,34 @@ pub enum Expr {
     Nil,
 }
 
+impl std::fmt::Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expr::Unary { operator, right } => write!(f, "Unary: {operator}{right}"),
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => write!(f, "Binary: {left} {operator} {right}"),
+            Expr::Conditional {
+                condition,
+                when_true,
+                when_false,
+            } => write!(
+                f,
+                "Conditional: if ({condition}) {{ {when_true} }} else {{ {when_false} }}"
+            ),
+            Expr::Grouping(expr) => write!(f, "Grouping: ({expr})"),
+            Expr::Variable { name } => write!(f, "Variable: {name}"),
+            Expr::Assignment { name, value } => write!(f, "Assignment: {name} = {value}"),
+            Expr::BoolLiteral(v) => write!(f, "BoolLiteral: {v}"),
+            Expr::NumberLiteral(v) => write!(f, "NumberLiteral: {v}"),
+            Expr::StringLiteral(v) => write!(f, "StringLiteral: {v}"),
+            Expr::Nil => write!(f, "nil"),
+        }
+    }
+}
+
 impl Expr {
     pub fn new_unary(operator: Token, right: Expr) -> Expr {
         Self::Unary {

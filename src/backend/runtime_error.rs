@@ -9,8 +9,7 @@ pub enum RuntimeError {
     #[error("Invalid arithmetic operation")]
     InvalidArithmeticOperation,
 
-    // FIXME: implement fmt::Display for Expr
-    #[error("Unimplemented: todo!")]
+    #[error("Unimplemented expression: {expr}")]
     Unimplemented { expr: Expr },
 
     #[error("Environment error: {0}")]
