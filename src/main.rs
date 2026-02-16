@@ -20,7 +20,7 @@ fn main() {
 
 fn run_prompt() {
     println!("Lox REPL");
-    let mut rtm = Lox::new();
+    let mut lox = Lox::new();
 
     let mut buf = String::new();
     let stdin = io::stdin();
@@ -40,12 +40,12 @@ fn run_prompt() {
                 }
 
                 // TODO: refactor this entire file
-                if let Err(error) = rtm.run(source) {
-                    eprintln!("Error: {error:#?}");
+                if let Err(e) = lox.run(source) {
+                    eprintln!("{e}");
                 }
             }
             Err(e) => {
-                eprintln!("Error: {e}");
+                eprintln!("{e}");
                 process::exit(65)
             }
         };
@@ -56,7 +56,7 @@ fn run_prompt() {
 }
 
 fn run_file(path: &str) {
-    let mut rtm = Lox::new();
+    let mut lox = Lox::new();
 
     let Ok(src) = fs::read_to_string(path) else {
         eprintln!("Failed to read {path}");
@@ -64,7 +64,7 @@ fn run_file(path: &str) {
     };
 
     // TODO: implement Reporter::report_error;
-    if let Err(error) = rtm.run(&src) {
+    if let Err(error) = lox.run(&src) {
         eprintln!("{error:#?}");
         process::exit(65);
     }

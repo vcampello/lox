@@ -1,35 +1,24 @@
 use crate::ast::Expr;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum RuntimeError {
-    Interpreter(InterpreterError),
-    Environment(EnvironmentError),
-}
-
-#[derive(Debug)]
-pub enum InterpreterError {
+    #[error("Invalid operation")]
     InvalidOperation,
+
+    #[error("Invalid arithmetic operation")]
     InvalidArithmeticOperation,
+
+    // FIXME: implement fmt::Display for Expr
+    #[error("Unimplemented: todo!")]
     Unimplemented { expr: Expr },
-    UndefinedVariable { name: String },
+
+    #[error("Environment error: {0}")]
+    Environment(#[from] EnvironmentError),
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum EnvironmentError {
+    #[error("Undefined variable: {name}")]
     UndefinedVariable { name: String },
-}
-
-// -----------------------------------------------------------------------------
-// automatic conversion
-// -----------------------------------------------------------------------------
-impl From<InterpreterError> for RuntimeError {
-    fn from(value: InterpreterError) -> Self {
-        Self::Interpreter(value)
-    }
-}
-
-impl From<EnvironmentError> for RuntimeError {
-    fn from(value: EnvironmentError) -> Self {
-        Self::Environment(value)
-    }
 }

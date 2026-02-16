@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Env, InterpreterError};
+use super::{Env, RuntimeError};
 use crate::{
     ast::{Expr, Stmt},
     frontend::TokenType,
@@ -25,7 +25,7 @@ impl fmt::Display for Value {
     }
 }
 
-pub type InterpreterResult<T> = Result<T, InterpreterError>;
+pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
 #[derive(Debug, Default)]
 pub struct Interpreter {
@@ -80,7 +80,7 @@ impl Interpreter {
                         let is_true = Interpreter::is_truthy(&v);
                         Ok(Value::Bool(!is_true))
                     }
-                    _ => Err(InterpreterError::InvalidOperation),
+                    _ => Err(RuntimeError::InvalidOperation),
                 }
             }
 
@@ -127,37 +127,20 @@ impl Interpreter {
                     (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
                     (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
-                    _ => Err(InterpreterError::InvalidOperation),
+                    _ => Err(RuntimeError::InvalidOperation),
                 }
             }
 
-            Expr::Variable { name } => {
-                let v = self
-                    .env
-                    .get(&name.lexeme)
-                    // FIXME: this error handling is a mess but let's leave it here until I get to
-                    // the rewrite
-                    .map_err(|_| InterpreterError::UndefinedVariable {
-                        name: name.lexeme.to_string(),
-                    })?;
-
-                Ok(v.clone())
-            }
+            Expr::Variable { name } => Ok(self.env.get(&name.lexeme)?.clone()),
 
             Expr::Assignment { name, value } => {
                 let result = self.evaluate(value)?;
-                self.env.assign(&name.lexeme, &result).map_err(|_|
-                        // FIXME: this error handling is a mess but let's leave it here until I get to
-                        // the rewrite
-                         InterpreterError::UndefinedVariable {
-                            name: name.lexeme.to_string()
-                    })?;
-
+                self.env.assign(&name.lexeme, &result)?;
                 Ok(result)
             }
 
             // FIXME: remove once conditionals are added
-            _ => Err(InterpreterError::Unimplemented { expr: expr.clone() }),
+            _ => Err(RuntimeError::Unimplemented { expr: expr.clone() }),
         }
     }
 

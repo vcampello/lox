@@ -11,3 +11,4 @@ codegen-units = 1
 lto = true        # FullLTO - the most aggressive LTO version
 
 [dependencies]
+thiserror = "2.0.18"
