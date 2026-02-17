@@ -96,7 +96,6 @@ impl<'a> Scanner<'a> {
                 (char, _) if char.is_ascii_digit() => self.handle_number(),
                 (char, _) if Scanner::is_identifier(&char) => self.handle_identifier_and_keywords(),
 
-                // REFACTOR: there's some shared error handling between the scanner and the runtime
                 (token, _) => {
                     return Err(ScannerError::UnknownToken {
                         token,
