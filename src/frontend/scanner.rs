@@ -133,7 +133,9 @@ impl<'a> Scanner<'a> {
 
         // skip n chars
         for _ in 0..skip_chars {
-            self.advance();
+            if self.advance().is_none() {
+                break;
+            }
         }
     }
 
