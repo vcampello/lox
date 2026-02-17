@@ -45,7 +45,6 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    // FIXME: plug ScannerResult
     pub fn scan_tokens(&mut self) -> ScannerResult<&Vec<Token>> {
         // scan each character
         while let Some(char) = self.advance() {
