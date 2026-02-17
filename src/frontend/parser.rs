@@ -171,43 +171,48 @@ impl<'a> Parser<'a> {
 
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
-        // FIXME: is there a better way to enforce always having something?
-        // NOTE: we'll bypass match_tokens to make this more readable
-        if let Some(token) = self.advance() {
-            return match &token.token_type {
-                TokenType::True => Ok(Expr::BoolLiteral(true)),
-                TokenType::False => Ok(Expr::BoolLiteral(false)),
-                TokenType::Nil => Ok(Expr::Nil),
-                TokenType::Number => token
+        let token = self.advance().ok_or(ParserError::ExpectedExpression)?;
+
+        match &token.token_type {
+            TokenType::True => Ok(Expr::BoolLiteral(true)),
+            TokenType::False => Ok(Expr::BoolLiteral(false)),
+            TokenType::Nil => Ok(Expr::Nil),
+            TokenType::Number => token
+                .lexeme
+                .parse::<f64>()
+                .map_err(|_| ParserError::InvalidNumber {
+                    token: token.clone(),
+                })
+                .map(Expr::NumberLiteral),
+            TokenType::String => {
+                // String lexeme includes quotes, strip them
+                let content = token
                     .lexeme
-                    .parse::<f64>()
-                    .map_err(|_| ParserError::InvalidAssignmentTarget {
-                        token: token.clone(),
-                    })
-                    .map(Expr::NumberLiteral),
-                TokenType::String => Ok(Expr::StringLiteral(
-                    token.lexeme[1..token.lexeme.len() - 1].to_string(),
-                )),
-                TokenType::LeftParen => {
-                    let expr = self.expression()?; // must be called before consuming
-                    self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
-                    Ok(Expr::new_grouping(expr))
-                }
-                TokenType::Identifier => Ok(Expr::Variable {
-                    name: token.clone(),
-                }),
+                    .strip_prefix('"')
+                    .and_then(|s| s.strip_suffix('"'))
+                    .unwrap_or(&token.lexeme);
+                Ok(Expr::StringLiteral(content.to_string()))
+            }
 
-                _ => Err(ParserError::ExpectedExpression),
-            };
+            TokenType::LeftParen => {
+                let expr = self.expression()?; // must be called before consuming
+                self.consume(TokenType::RightParen, "missing ) after expression.")?;
+                Ok(Expr::new_grouping(expr))
+            }
+            TokenType::Identifier => Ok(Expr::Variable {
+                name: token.clone(),
+            }),
+
+            _ => Err(ParserError::ExpectedExpression),
         }
-
-        Err(ParserError::ExpectedExpression)
     }
 
-    // FIXME: it should be &TokenType
     fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
-            return Err(ParserError::ExpectedToken { token_type });
+            return Err(ParserError::ExpectedToken {
+                token_type,
+                message,
+            });
         }
 
         // TODO: improve this. Maybe some kind of map?
@@ -227,7 +232,7 @@ impl<'a> Parser<'a> {
 
     fn print_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expected ; after value")?;
+        self.consume(TokenType::Semicolon, "missing ; after expression")?;
         Ok(Stmt::Print(expr))
     }
 
@@ -237,13 +242,13 @@ impl<'a> Parser<'a> {
             stmts.push(self.declaration()?);
         }
 
-        self.consume(TokenType::RightBrace, "Expected } after block")?;
+        self.consume(TokenType::RightBrace, "missing } after block")?;
         Ok(Stmt::Block(stmts))
     }
 
     fn expression_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expected ; after value")?;
+        self.consume(TokenType::Semicolon, "missing ; after expression")?;
         Ok(Stmt::Expression(expr))
     }
 
@@ -257,11 +262,7 @@ impl<'a> Parser<'a> {
 
     fn var_declaration(&mut self) -> ParserResult<Stmt> {
         let name = self
-            .consume(
-                // FIXME: I missed this. I can only define the `a` variable
-                TokenType::Identifier,
-                "Expected variable name.",
-            )?
+            .consume(TokenType::Identifier, "missing variable name.")?
             .clone();
 
         let initializer = match self.match_tokens(&[TokenType::Equal]) {
@@ -271,7 +272,7 @@ impl<'a> Parser<'a> {
 
         self.consume(
             TokenType::Semicolon,
-            "Expected ';' after variable declaration.",
+            "missing ; after variable declaration.",
         )?;
 
         Ok(Stmt::Var { name, initializer })

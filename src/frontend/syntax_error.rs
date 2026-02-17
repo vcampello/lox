@@ -23,14 +23,17 @@ pub enum ScannerError {
 
 #[derive(Error, Debug)]
 pub enum ParserError {
-    #[error("Expected token: {token_type}")]
-    ExpectedToken { token_type: TokenType },
+    #[error("Expected token: {message}")]
+    ExpectedToken {
+        token_type: TokenType,
+        message: &'static str,
+    },
 
     #[error("Expected expression")]
     ExpectedExpression,
 
-    #[error("Invalid number: {lexeme}")]
-    InvalidNumber { lexeme: String },
+    #[error("Invalid number: {} at {}", token.lexeme, token.span.to_location())]
+    InvalidNumber { token: Token },
 
     #[error("Invalid assignment to {token}")]
     InvalidAssignmentTarget { token: Token },
