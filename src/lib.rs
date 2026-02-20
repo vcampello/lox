@@ -1,9 +1,9 @@
-pub mod ast;
-pub mod backend;
-pub mod frontend;
-pub mod lox;
-pub mod lox_error;
+mod ast;
+mod backend;
+mod frontend;
+mod lox;
+mod lox_error;
 
-// re-export as a flat package
+// re-export current level as a flat package
 pub use lox::*;
 pub use lox_error::*;

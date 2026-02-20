@@ -1,7 +1,7 @@
-pub mod parser;
-pub mod scanner;
-pub mod syntax_error;
-pub mod token;
+mod parser;
+mod scanner;
+mod syntax_error;
+mod token;
 
 // re-export as a flat package
 pub use parser::*;

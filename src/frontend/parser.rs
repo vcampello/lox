@@ -1,8 +1,7 @@
 use std::{iter::Peekable, slice::Iter};
 
 use super::token::{Token, TokenType};
-use crate::ast::expr::Expr;
-use crate::ast::stmt::Stmt;
+use crate::ast::{Expr, Stmt};
 use crate::frontend::ParserError;
 
 pub type ParserResult<T> = Result<T, ParserError>;
