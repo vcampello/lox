@@ -263,6 +263,9 @@ impl<'a> Parser<'a> {
         if self.match_tokens(&[TokenType::Print]).is_some() {
             return self.print_stmt();
         }
+        if self.match_tokens(&[TokenType::While]).is_some() {
+            return self.while_stmt();
+        }
         if self.match_tokens(&[TokenType::LeftBrace]).is_some() {
             return self.block_stmt();
         }
@@ -275,22 +278,35 @@ impl<'a> Parser<'a> {
     fn print_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "missing ; after expression")?;
+
         Ok(Stmt::Print(expr))
+    }
+
+    fn while_stmt(&mut self) -> ParserResult<Stmt> {
+        self.consume(TokenType::LeftParen, "missing after while")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "missing } after while conditon")?;
+        let body = self.statement()?;
+
+        Ok(Stmt::new_while(condition, body))
     }
 
     fn block_stmt(&mut self) -> ParserResult<Stmt> {
         let mut stmts: Vec<Stmt> = Vec::new();
+
         while !self.check(&TokenType::RightBrace) && !self.is_eof() {
             stmts.push(self.declaration()?);
         }
 
         self.consume(TokenType::RightBrace, "missing } after block")?;
+
         Ok(Stmt::Block(stmts))
     }
 
     fn expression_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "missing ; after expression")?;
+
         Ok(Stmt::Expression(expr))
     }
 

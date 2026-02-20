@@ -50,6 +50,11 @@ impl Interpreter {
                         self.interpret(slice::from_ref(stmt))?;
                     }
                 }
+                Stmt::While { condition, body } => {
+                    while self.evaluate(condition)?.is_truthy() {
+                        self.interpret(slice::from_ref(body))?;
+                    }
+                }
             };
         }
 

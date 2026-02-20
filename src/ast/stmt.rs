@@ -15,6 +15,10 @@ pub enum Stmt {
         when_true: Box<Stmt>,
         when_false: Option<Box<Stmt>>,
     },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
+    },
 }
 
 impl Stmt {
@@ -23,6 +27,13 @@ impl Stmt {
             condition,
             when_true: Box::new(when_true),
             when_false: when_false.map(Box::new),
+        }
+    }
+
+    pub fn new_while(condition: Expr, body: Stmt) -> Self {
+        Self::While {
+            condition,
+            body: Box::new(body),
         }
     }
 }
