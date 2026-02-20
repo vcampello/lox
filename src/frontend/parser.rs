@@ -79,10 +79,7 @@ impl<'a> Parser<'a> {
         None
     }
 
-    fn expression(&mut self) -> ParserResult<Expr> {
-        self.assignment()
-    }
-
+    // TODO: add production rules
     fn or(&mut self) -> ParserResult<Expr> {
         let mut expr = self.and()?;
 
@@ -95,6 +92,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    // TODO: add production rules
     fn and(&mut self) -> ParserResult<Expr> {
         let mut expr = self.equality()?;
 
@@ -107,6 +105,12 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    // TODO: add production rules
+    fn expression(&mut self) -> ParserResult<Expr> {
+        self.assignment()
+    }
+
+    // TODO: add production rules
     fn assignment(&mut self) -> ParserResult<Expr> {
         let expr = self.or()?;
 
@@ -260,11 +264,15 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> ParserResult<Stmt> {
+        // FIXME: use match instead of this mess
         if self.match_tokens(&[TokenType::Print]).is_some() {
             return self.print_stmt();
         }
         if self.match_tokens(&[TokenType::While]).is_some() {
             return self.while_stmt();
+        }
+        if self.match_tokens(&[TokenType::For]).is_some() {
+            return self.for_stmt();
         }
         if self.match_tokens(&[TokenType::LeftBrace]).is_some() {
             return self.block_stmt();
@@ -283,12 +291,39 @@ impl<'a> Parser<'a> {
     }
 
     fn while_stmt(&mut self) -> ParserResult<Stmt> {
-        self.consume(TokenType::LeftParen, "missing after while")?;
+        self.consume(TokenType::LeftParen, "missing ( after while")?;
         let condition = self.expression()?;
         self.consume(TokenType::RightParen, "missing } after while conditon")?;
         let body = self.statement()?;
 
         Ok(Stmt::new_while(condition, body))
+    }
+
+    // forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+    fn for_stmt(&mut self) -> ParserResult<Stmt> {
+        self.consume(TokenType::LeftParen, "missing ( after for")?;
+
+        let initializer = match self.match_tokens(&[TokenType::Var, TokenType::Semicolon]) {
+            Some(token) if token.token_type == TokenType::Var => Some(self.var_declaration()?),
+            Some(token) if token.token_type == TokenType::Semicolon => None,
+            _ => Some(self.expression_stmt()?),
+        };
+
+        let condition = match self.check(&TokenType::Semicolon) {
+            false => Some(self.expression()?),
+            true => None,
+        };
+
+        self.consume(TokenType::Semicolon, "missing ; after for condition")?;
+
+        let increment = match self.check(&TokenType::RightParen) {
+            false => Some(self.expression()?),
+            true => None,
+        };
+        self.consume(TokenType::RightParen, "missing ) after for conditon")?;
+        let body = self.statement()?;
+
+        Ok(Stmt::new_for(initializer, condition, increment, body))
     }
 
     fn block_stmt(&mut self) -> ParserResult<Stmt> {

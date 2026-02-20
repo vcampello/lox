@@ -19,6 +19,12 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+    For {
+        initializer: Option<Box<Stmt>>,
+        condition: Option<Expr>,
+        increment: Option<Expr>,
+        body: Box<Stmt>,
+    },
 }
 
 impl Stmt {
@@ -33,6 +39,20 @@ impl Stmt {
     pub fn new_while(condition: Expr, body: Stmt) -> Self {
         Self::While {
             condition,
+            body: Box::new(body),
+        }
+    }
+
+    pub fn new_for(
+        initializer: Option<Stmt>,
+        condition: Option<Expr>,
+        increment: Option<Expr>,
+        body: Stmt,
+    ) -> Self {
+        Self::For {
+            initializer: initializer.map(Box::new),
+            condition,
+            increment,
             body: Box::new(body),
         }
     }

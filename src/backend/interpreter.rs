@@ -55,6 +55,31 @@ impl Interpreter {
                         self.interpret(slice::from_ref(body))?;
                     }
                 }
+                Stmt::For {
+                    initializer,
+                    condition,
+                    increment,
+                    body,
+                } => {
+                    // capture for loop initializer in a new scope
+                    self.env.begin_scope();
+
+                    if let Some(initializer) = initializer {
+                        self.interpret(slice::from_ref(initializer))?;
+                    }
+
+                    while match condition {
+                        Some(expr) => self.evaluate(expr)?.is_truthy(),
+                        None => true,
+                    } {
+                        self.interpret(slice::from_ref(body))?;
+
+                        if let Some(increment) = increment {
+                            self.evaluate(increment)?;
+                        }
+                    }
+                    self.env.end_scope();
+                }
             };
         }
 

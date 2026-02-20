@@ -5,8 +5,9 @@ A work-in-progress Rust implementation of the Lox programming language from [Cra
 ## Language Features
 
 Currently implemented:
+
 - Variables and assignment
-- Control flow: `if`/`else`, `while` loops
+- Control flow: `if`/`else`, `while`/`for` loops
 - Blocks and lexical scoping
 - Expressions: binary operators, unary operators, logical operators (`and`, `or`)
 - Literals: numbers, strings, booleans, `nil`
@@ -14,16 +15,16 @@ Currently implemented:
 - `print` statement
 
 Not yet implemented:
+
 - Functions
 - Classes
-- `for` loops
 - `break`/`continue`
 
 ## Goals
 
 To implement the following:
 
-- Interpreter - in progress 
+- Interpreter - in progress
 - Formatter
 - LSP
 - Debugger
