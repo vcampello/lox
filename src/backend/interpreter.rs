@@ -1,29 +1,10 @@
-use std::{fmt, slice};
+use std::slice;
 
-use super::{Env, RuntimeError};
+use super::{Env, RuntimeError, Value};
 use crate::{
     ast::{Expr, Stmt},
     frontend::TokenType,
 };
-
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub enum Value {
-    Bool(bool),
-    Number(f64),
-    String(String),
-    Nil,
-}
-
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::String(v) => write!(f, "{v}"),
-            Self::Number(v) => write!(f, "{v}"),
-            Self::Bool(v) => write!(f, "{v}"),
-            Self::Nil => write!(f, "nil"),
-        }
-    }
-}
 
 pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
@@ -62,9 +43,7 @@ impl Interpreter {
                     when_true,
                     when_false,
                 } => {
-                    let if_true = self.evaluate(condition)?;
-
-                    if Interpreter::is_truthy(&if_true) {
+                    if self.evaluate(condition)?.is_truthy() {
                         // else cute if branch
                         self.interpret(slice::from_ref(when_true))?;
                     } else if let Some(stmt) = when_false {
@@ -91,10 +70,7 @@ impl Interpreter {
 
                 match (&operator.token_type, right_result) {
                     (TokenType::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
-                    (TokenType::Bang, v) => {
-                        let is_true = Interpreter::is_truthy(&v);
-                        Ok(Value::Bool(!is_true))
-                    }
+                    (TokenType::Bang, v) => Ok(Value::Bool(!v.is_truthy())),
                     _ => Err(RuntimeError::InvalidOperation),
                 }
             }
@@ -139,8 +115,10 @@ impl Interpreter {
                     }
 
                     // equality - number
-                    (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
-                    (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
+                    (TokenType::EqualEqual, l, r) => {
+                        Ok(Value::Bool(l.is_truthy() == r.is_truthy()))
+                    }
+                    (TokenType::BangEqual, l, r) => Ok(Value::Bool(l.is_truthy() != r.is_truthy())),
 
                     _ => Err(RuntimeError::InvalidOperation),
                 }
@@ -153,16 +131,6 @@ impl Interpreter {
                 self.env.assign(&name.lexeme, &result)?;
                 Ok(result)
             }
-        }
-    }
-
-    // REVIEW: should this be part of the Interpreter or Value?
-    /// Lox follows Ruby’s simple rule: false and nil are falsey, and everything else is truthy.
-    pub fn is_truthy(value: &Value) -> bool {
-        match value {
-            Value::Nil => false,
-            Value::Bool(v) => *v,
-            _ => true,
         }
     }
 }
