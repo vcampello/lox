@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, slice};
 
 use super::{Env, RuntimeError};
 use crate::{
@@ -56,6 +56,21 @@ impl Interpreter {
                     self.env.begin_scope();
                     self.interpret(stmts)?;
                     self.env.end_scope();
+                }
+                Stmt::Conditional {
+                    condition,
+                    when_true,
+                    when_false,
+                } => {
+                    let if_true = self.evaluate(condition)?;
+
+                    if Interpreter::is_truthy(&if_true) {
+                        // else cute if branch
+                        self.interpret(slice::from_ref(when_true))?;
+                    } else if let Some(stmt) = when_false {
+                        // execute else branch if defined
+                        self.interpret(slice::from_ref(stmt))?;
+                    }
                 }
             };
         }
@@ -138,9 +153,6 @@ impl Interpreter {
                 self.env.assign(&name.lexeme, &result)?;
                 Ok(result)
             }
-
-            // FIXME: remove once conditionals are added
-            _ => Err(RuntimeError::Unimplemented { expr: expr.clone() }),
         }
     }
 

@@ -11,11 +11,6 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
-    Conditional {
-        condition: Box<Expr>,
-        when_true: Box<Expr>,
-        when_false: Box<Expr>,
-    },
     Grouping(Box<Expr>),
     Variable {
         name: Token,
@@ -41,14 +36,6 @@ impl std::fmt::Display for Expr {
                 operator,
                 right,
             } => write!(f, "Binary: {left} {operator} {right}"),
-            Expr::Conditional {
-                condition,
-                when_true,
-                when_false,
-            } => write!(
-                f,
-                "Conditional: if ({condition}) {{ {when_true} }} else {{ {when_false} }}"
-            ),
             Expr::Grouping(expr) => write!(f, "Grouping: ({expr})"),
             Expr::Variable { name } => write!(f, "Variable: {name}"),
             Expr::Assignment { name, value } => write!(f, "Assignment: {name} = {value}"),
@@ -73,14 +60,6 @@ impl Expr {
             left: Box::new(left),
             operator,
             right: Box::new(right),
-        }
-    }
-
-    pub fn new_conditional(condition: Expr, when_true: Expr, when_false: Expr) -> Expr {
-        Self::Conditional {
-            condition: Box::new(condition),
-            when_true: Box::new(when_true),
-            when_false: Box::new(when_false),
         }
     }
 
@@ -114,18 +93,18 @@ impl Expr {
                     Expr::print(right)
                 )
             }
-            Expr::Conditional {
-                condition,
-                when_true,
-                when_false,
-            } => {
-                format!(
-                    "(conditional {} {} {})",
-                    Expr::print(condition),
-                    Expr::print(when_true),
-                    Expr::print(when_false)
-                )
-            }
+            // Expr::Conditional {
+            //     condition,
+            //     when_true,
+            //     when_false,
+            // } => {
+            //     format!(
+            //         "(conditional {} {} {})",
+            //         Expr::print(condition),
+            //         Expr::print(when_true),
+            //         Expr::print(when_false)
+            //     )
+            // }
             Expr::Assignment { name, value } => format!("{} {}", name.lexeme, Expr::print(value)),
 
             Expr::StringLiteral(value) => value.clone(),

@@ -207,6 +207,22 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // ifStmt → "if" "(" expression ")" statement | ( "else" statement )? ;
+    fn if_stmt(&mut self) -> ParserResult<Stmt> {
+        self.consume(TokenType::LeftParen, "missing ( after if")?;
+        let condition = self.expression()?;
+
+        self.consume(TokenType::RightParen, "missing ) after if condition")?;
+        let when_true = self.statement()?;
+
+        let when_false = match self.match_tokens(&[TokenType::Else]).is_some() {
+            true => Some(self.statement()?),
+            false => None,
+        };
+
+        Ok(Stmt::new_conditional(condition, when_true, when_false))
+    }
+
     fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
         if !self.check(&token_type) {
             return Err(ParserError::ExpectedToken {
@@ -226,6 +242,9 @@ impl<'a> Parser<'a> {
         }
         if self.match_tokens(&[TokenType::LeftBrace]).is_some() {
             return self.block_stmt();
+        }
+        if self.match_tokens(&[TokenType::If]).is_some() {
+            return self.if_stmt();
         }
         self.expression_stmt()
     }
