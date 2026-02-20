@@ -121,6 +121,32 @@ impl Interpreter {
                 }
             }
 
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => match operator.token_type {
+                TokenType::And => {
+                    let left_result = self.evaluate(left)?;
+                    match left_result.is_truthy() {
+                        // short circuit
+                        false => Ok(left_result),
+                        // keep chaining so long as it's true
+                        true => self.evaluate(right),
+                    }
+                }
+                TokenType::Or => {
+                    let left_result = self.evaluate(left)?;
+                    match left_result.is_truthy() {
+                        // short circuit
+                        true => Ok(left_result),
+                        // keep chaining
+                        false => self.evaluate(right),
+                    }
+                }
+                _ => Err(RuntimeError::InvalidOperation),
+            },
+
             Expr::Variable { name } => Ok(self.env.get(&name.lexeme)?.clone()),
 
             Expr::Assignment { name, value } => {

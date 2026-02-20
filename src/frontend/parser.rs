@@ -83,8 +83,32 @@ impl<'a> Parser<'a> {
         self.assignment()
     }
 
+    fn or(&mut self) -> ParserResult<Expr> {
+        let mut expr = self.and()?;
+
+        while let Some(token) = self.match_tokens(&[TokenType::Or]) {
+            let operator = token;
+            let right = self.or()?;
+            expr = Expr::new_logical(expr, operator, right)
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> ParserResult<Expr> {
+        let mut expr = self.equality()?;
+
+        while let Some(token) = self.match_tokens(&[TokenType::And]) {
+            let operator = token;
+            let right = self.equality()?;
+            expr = Expr::new_logical(expr, operator, right)
+        }
+
+        Ok(expr)
+    }
+
     fn assignment(&mut self) -> ParserResult<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if let Some(equals) = self.match_tokens(&[TokenType::Equal]) {
             let value = self.assignment()?;

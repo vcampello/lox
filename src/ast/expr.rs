@@ -19,6 +19,11 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
 
     // Treat literals as individual expressions
     BoolLiteral(bool),
@@ -39,6 +44,11 @@ impl std::fmt::Display for Expr {
             Expr::Grouping(expr) => write!(f, "Grouping: ({expr})"),
             Expr::Variable { name } => write!(f, "Variable: {name}"),
             Expr::Assignment { name, value } => write!(f, "Assignment: {name} = {value}"),
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => write!(f, "Binary: {left} {operator} {right}"),
             Expr::BoolLiteral(v) => write!(f, "BoolLiteral: {v}"),
             Expr::NumberLiteral(v) => write!(f, "NumberLiteral: {v}"),
             Expr::StringLiteral(v) => write!(f, "StringLiteral: {v}"),
@@ -74,6 +84,14 @@ impl Expr {
         }
     }
 
+    pub fn new_logical(left: Expr, operator: Token, right: Expr) -> Expr {
+        Self::Logical {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        }
+    }
+
     // REVIEW: this could be a trait and then there could be an AST printer
     // NOTE: I'll see how far I can get without the visitor pattern suggested in the book
     pub fn print(e: &Expr) -> String {
@@ -93,18 +111,18 @@ impl Expr {
                     Expr::print(right)
                 )
             }
-            // Expr::Conditional {
-            //     condition,
-            //     when_true,
-            //     when_false,
-            // } => {
-            //     format!(
-            //         "(conditional {} {} {})",
-            //         Expr::print(condition),
-            //         Expr::print(when_true),
-            //         Expr::print(when_false)
-            //     )
-            // }
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => {
+                format!(
+                    "({} {} {})",
+                    operator.lexeme,
+                    Expr::print(left),
+                    Expr::print(right)
+                )
+            }
             Expr::Assignment { name, value } => format!("{} {}", name.lexeme, Expr::print(value)),
 
             Expr::StringLiteral(value) => value.clone(),
