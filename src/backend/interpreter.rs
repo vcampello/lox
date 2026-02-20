@@ -114,10 +114,8 @@ impl Interpreter {
                     }
 
                     // equality - number
-                    (TokenType::EqualEqual, l, r) => {
-                        Ok(Value::Bool(l.is_truthy() == r.is_truthy()))
-                    }
-                    (TokenType::BangEqual, l, r) => Ok(Value::Bool(l.is_truthy() != r.is_truthy())),
+                    (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
+                    (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
                     _ => Err(RuntimeError::InvalidOperation),
                 }
