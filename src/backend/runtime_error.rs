@@ -14,6 +14,12 @@ pub enum RuntimeError {
 
     #[error("Environment error: {0}")]
     Environment(#[from] EnvironmentError),
+
+    #[error("Continue")]
+    Continue,
+
+    #[error("Break")]
+    Break,
 }
 
 #[derive(Error, Debug)]

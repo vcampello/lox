@@ -48,6 +48,8 @@ impl<'a> Parser<'a> {
                     | TokenType::For
                     | TokenType::If
                     | TokenType::While
+                    | TokenType::Break
+                    | TokenType::Continue
                     | TokenType::Print
                     | TokenType::Return
                     | TokenType::Eof => return,
@@ -268,11 +270,17 @@ impl<'a> Parser<'a> {
         if self.match_tokens(&[TokenType::Print]).is_some() {
             return self.print_stmt();
         }
-        if self.match_tokens(&[TokenType::While]).is_some() {
-            return self.while_stmt();
+        if self.match_tokens(&[TokenType::Continue]).is_some() {
+            return self.continue_stmt();
+        }
+        if self.match_tokens(&[TokenType::Break]).is_some() {
+            return self.break_stmt();
         }
         if self.match_tokens(&[TokenType::For]).is_some() {
             return self.for_stmt();
+        }
+        if self.match_tokens(&[TokenType::While]).is_some() {
+            return self.while_stmt();
         }
         if self.match_tokens(&[TokenType::LeftBrace]).is_some() {
             return self.block_stmt();
@@ -343,6 +351,18 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::Semicolon, "missing ; after expression")?;
 
         Ok(Stmt::Expression(expr))
+    }
+
+    fn continue_stmt(&mut self) -> ParserResult<Stmt> {
+        self.consume(TokenType::Semicolon, "missing ; after continue")?;
+
+        Ok(Stmt::Continue)
+    }
+
+    fn break_stmt(&mut self) -> ParserResult<Stmt> {
+        self.consume(TokenType::Semicolon, "missing ; after break")?;
+
+        Ok(Stmt::Break)
     }
 
     fn declaration(&mut self) -> ParserResult<Stmt> {

@@ -19,6 +19,8 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+    Continue,
+    Break,
     For {
         initializer: Option<Box<Stmt>>,
         condition: Option<Expr>,

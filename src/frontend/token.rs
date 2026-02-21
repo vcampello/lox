@@ -49,6 +49,8 @@ pub enum TokenType {
     True,
     Var,
     While,
+    Continue,
+    Break,
 
     // Misc
     Eof,
@@ -74,6 +76,8 @@ impl TokenType {
             "true" => TokenType::True,
             "var" => TokenType::Var,
             "while" => TokenType::While,
+            "continue" => TokenType::Continue,
+            "break" => TokenType::Break,
 
             // Not a keyword
             _ => TokenType::Identifier,
@@ -83,6 +87,7 @@ impl TokenType {
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: write a macro for this
         match self {
             // Single-character tokens.
             TokenType::LeftParen => write!(f, "LeftParen"),
@@ -131,6 +136,8 @@ impl fmt::Display for TokenType {
             TokenType::True => write!(f, "True"),
             TokenType::Var => write!(f, "Var"),
             TokenType::While => write!(f, "While"),
+            TokenType::Continue => write!(f, "Continue"),
+            TokenType::Break => write!(f, "Break"),
 
             // Misc.
             TokenType::Eof => write!(f, "Eof"),

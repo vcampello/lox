@@ -1,0 +1,36 @@
+print "testing for loop:";
+for (var i = 0; i < 10; i = i + 1) {
+  print "starting: " + i;
+
+  if (i == 2) {
+    print "  continue:" + i;
+    continue;
+  }
+
+  if (i == 5) {
+    print "  break:" + i;
+    break;
+  }
+  print "  ending: " + i;
+
+}
+
+
+print "testing while loop:";
+var i = 0;
+while ( i < 10 ) {
+  print "starting: " + i;
+  var ii = i;
+  i = i + 1;
+
+  if (ii == 2) {
+    print "  continue:" + ii;
+    continue;
+  }
+
+  if (ii == 5) {
+    print "  break:" + ii;
+    break;
+  }
+  print "  ending: " + ii;
+}

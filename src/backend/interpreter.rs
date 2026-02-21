@@ -52,7 +52,13 @@ impl Interpreter {
                 }
                 Stmt::While { condition, body } => {
                     while self.evaluate(condition)?.is_truthy() {
-                        self.interpret(slice::from_ref(body))?;
+                        if let Err(e) = self.interpret(slice::from_ref(body)) {
+                            match e {
+                                RuntimeError::Continue => continue,
+                                RuntimeError::Break => break,
+                                _ => return Err(e),
+                            }
+                        }
                     }
                 }
                 Stmt::For {
@@ -72,14 +78,26 @@ impl Interpreter {
                         Some(expr) => self.evaluate(expr)?.is_truthy(),
                         None => true,
                     } {
-                        self.interpret(slice::from_ref(body))?;
+                        // self.interpret(slice::from_ref(body))?;
+
+                        let result = self.interpret(slice::from_ref(body));
 
                         if let Some(increment) = increment {
                             self.evaluate(increment)?;
                         }
+
+                        if let Err(e) = result {
+                            match e {
+                                RuntimeError::Continue => continue,
+                                RuntimeError::Break => break,
+                                _ => return Err(e),
+                            }
+                        }
                     }
                     self.env.end_scope();
                 }
+                Stmt::Continue => return Err(RuntimeError::Continue),
+                Stmt::Break => return Err(RuntimeError::Break),
             };
         }
 
