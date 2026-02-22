@@ -8,7 +8,10 @@ Currently implemented:
 
 - Variables and assignment
 - Blocks and lexical scoping
-- Expressions: binary operators, unary operators, logical operators (`and`, `or`)
+- Expressions:
+    - binary operators
+    - unary operators
+    - logical operators (`and`, `or`)
 - Comments
 - `print` statement
 - Control flow:
@@ -28,7 +31,6 @@ Not yet implemented:
 
 - Functions
 - Classes
-- `break`/`continue`
 
 ## Goals
 
