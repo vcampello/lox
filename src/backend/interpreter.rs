@@ -51,15 +51,34 @@ impl Interpreter {
                     }
                 }
                 Stmt::While { condition, body } => {
-                    while self.evaluate(condition)?.is_truthy() {
-                        if let Err(e) = self.interpret(slice::from_ref(body)) {
-                            match e {
-                                RuntimeError::Continue => continue,
-                                RuntimeError::Break => break,
-                                _ => return Err(e),
+                    // capture condition variables separately
+                    self.env.begin_scope();
+
+                    while self
+                        .evaluate(condition)
+                        // clean up condition scope in case of failure
+                        .inspect_err(|_| self.env.end_scope())?
+                        .is_truthy()
+                    {
+                        // capture the body result
+                        self.env.begin_scope(); // capture while body scope
+                        let body_result = self.interpret(slice::from_ref(body));
+                        self.env.end_scope(); // drop while body scope
+
+                        match body_result {
+                            Err(RuntimeError::Continue) => continue,
+                            Err(RuntimeError::Break) => break,
+                            Err(e) => {
+                                // early exit: drop while condition variables
+                                self.env.end_scope();
+                                return Err(e);
                             }
-                        }
+                            Ok(_) => {}
+                        };
                     }
+
+                    // drop while condition variables
+                    self.env.end_scope();
                 }
                 Stmt::For {
                     initializer,
