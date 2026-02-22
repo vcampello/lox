@@ -77,7 +77,7 @@ impl Interpreter {
                         };
                     }
 
-                    // drop while condition variables
+                    // drop while loop condition variables
                     self.env.end_scope();
                 }
                 Stmt::For {
@@ -89,30 +89,53 @@ impl Interpreter {
                     // capture for loop initializer in a new scope
                     self.env.begin_scope();
 
+                    // run the initializer once
                     if let Some(initializer) = initializer {
-                        self.interpret(slice::from_ref(initializer))?;
+                        self.interpret(slice::from_ref(initializer))
+                            .inspect_err(|_| {
+                                // drop for loop condition variables
+                                self.env.end_scope();
+                            })?;
                     }
 
                     while match condition {
-                        Some(expr) => self.evaluate(expr)?.is_truthy(),
+                        Some(expr) => self
+                            .evaluate(expr)
+                            // clean up condition scope in case of failure
+                            .inspect_err(|_| self.env.end_scope())?
+                            .is_truthy(),
                         None => true,
                     } {
-                        // self.interpret(slice::from_ref(body))?;
+                        // capture the body result
+                        self.env.begin_scope(); // capture while body scope
+                        let body_result = self.interpret(slice::from_ref(body));
+                        self.env.end_scope(); // drop while body scope
 
-                        let result = self.interpret(slice::from_ref(body));
-
+                        // run the increment expression for success & continue, but not break
                         if let Some(increment) = increment {
-                            self.evaluate(increment)?;
-                        }
-
-                        if let Err(e) = result {
-                            match e {
-                                RuntimeError::Continue => continue,
-                                RuntimeError::Break => break,
-                                _ => return Err(e),
+                            match body_result {
+                                Err(RuntimeError::Continue) | Ok(_) => {
+                                    self.evaluate(increment)
+                                        // clean up body scope in case of failure
+                                        .inspect_err(|_| self.env.end_scope())?;
+                                }
+                                _ => {}
                             }
-                        }
+                        };
+
+                        // handle the result of the body evaluation
+                        match body_result {
+                            Err(RuntimeError::Continue) => continue,
+                            Err(RuntimeError::Break) => break,
+                            Err(e) => {
+                                // early exit: drop while condition variables
+                                self.env.end_scope();
+                                return Err(e);
+                            }
+                            Ok(_) => {}
+                        };
                     }
+                    // drop for loop condition variables
                     self.env.end_scope();
                 }
                 Stmt::Continue => return Err(RuntimeError::Continue),
