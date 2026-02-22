@@ -33,9 +33,14 @@ impl Interpreter {
                     self.env.define(&name.lexeme, &value);
                 }
                 Stmt::Block(stmts) => {
+                    // new scope for the upcoming block
                     self.env.begin_scope();
-                    self.interpret(stmts)?;
+
+                    // the scope needs to be dropped regardless of the result
+                    let result = self.interpret(stmts);
                     self.env.end_scope();
+
+                    result?;
                 }
                 Stmt::Conditional {
                     condition,
