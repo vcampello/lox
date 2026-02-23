@@ -111,6 +111,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 This project is based on the Lox language specification from [Crafting Interpreters](https://craftinginterpreters.com/).
 
-```
-
-```
