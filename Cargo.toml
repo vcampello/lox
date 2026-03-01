@@ -11,4 +11,5 @@ codegen-units = 1
 lto = true        # FullLTO - the most aggressive LTO version
 
 [dependencies]
+miette = { version = "7.6.0", features = ["fancy"] }
 thiserror = "2.0.18"
