@@ -1,24 +1,33 @@
 use crate::frontend::Span;
 
 use super::token::{Token, TokenType};
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum SyntaxError {
     #[error("Parser error: {0}")]
     Parser(#[from] ParserError),
 
-    #[error("Scanner error: {0}")]
+    // pass through error and diagnostics
+    #[error(transparent)]
+    #[diagnostic(transparent)]
     Scanner(#[from] ScannerError),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum ScannerError {
-    #[error("Unknown token: {token} at {}", span.to_location())]
-    UnknownToken { token: char, span: Span },
+    #[error("Unknown token")]
+    UnknownToken {
+        #[label("What is this?")]
+        at: SourceSpan,
+    },
 
-    #[error("Unterminated string at {}", span.to_location())]
-    UnterminatedString { span: Span },
+    #[error("Unterminated string")]
+    UnterminatedString {
+        #[label("Missing terminating double quote")]
+        at: SourceSpan,
+    },
 }
 
 #[derive(Error, Debug)]

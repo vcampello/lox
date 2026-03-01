@@ -1,8 +1,6 @@
-use std::{iter::Peekable, str::Chars};
-
-use crate::frontend::{ScannerError, Span};
-
 use super::token::{Token, TokenType};
+use crate::frontend::{ScannerError, Span};
+use std::{iter::Peekable, str::Chars};
 
 pub type ScannerResult<T> = Result<T, ScannerError>;
 
@@ -96,10 +94,10 @@ impl<'a> Scanner<'a> {
                 (char, _) if char.is_ascii_digit() => self.handle_number(),
                 (char, _) if Scanner::is_identifier(&char) => self.handle_identifier_and_keywords(),
 
-                (token, _) => {
+                _ => {
+                    // TODO: synchronize like the parser
                     return Err(ScannerError::UnknownToken {
-                        token,
-                        span: self.to_span(),
+                        at: self.to_offset_all().into(),
                     });
                 }
             };
@@ -115,6 +113,16 @@ impl<'a> Scanner<'a> {
 
     fn to_span(&self) -> Span {
         Span::new(self.line, self.col)
+    }
+
+    /// Capture the entire source code for Errors
+    fn to_offset_all(&self) -> (usize, usize) {
+        (self.start, self.current - self.start)
+    }
+
+    /// Capture only the current source code offset for Errors
+    fn to_offset(&self) -> (usize, usize) {
+        (self.current - 1, 1)
     }
 
     fn increase_line(&mut self) {
@@ -180,7 +188,7 @@ impl<'a> Scanner<'a> {
 
         if self.chars.peek().is_none() {
             return Err(ScannerError::UnterminatedString {
-                span: self.to_span(),
+                at: self.to_offset().into(),
             });
         }
 

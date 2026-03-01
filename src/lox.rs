@@ -1,3 +1,5 @@
+use miette::{Diagnostic, NamedSource};
+
 use crate::{
     LoxError,
     backend::Interpreter,

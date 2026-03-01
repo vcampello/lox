@@ -2,11 +2,14 @@ use crate::{
     backend::RuntimeError,
     frontend::{ParserError, ScannerError, SyntaxError},
 };
+use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
+#[error("transparent")]
 pub enum LoxError {
-    #[error("Syntax error: {0}")]
+    #[error("Syntax error")]
+    #[diagnostic(transparent)]
     Syntax(#[from] SyntaxError),
 
     #[error("Runtime error: {0}")]

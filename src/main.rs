@@ -5,6 +5,7 @@ use std::{
 };
 
 use lox::Lox;
+use miette::{NamedSource, Report};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -41,7 +42,8 @@ fn run_prompt() {
 
                 // TODO: refactor this entire file
                 if let Err(e) = lox.run(source) {
-                    eprintln!("{e}");
+                    let source_code = NamedSource::new("asdfasdf", source.to_string());
+                    eprintln!("{:?}", Report::new(e).with_source_code(source_code));
                 }
             }
             Err(e) => {
