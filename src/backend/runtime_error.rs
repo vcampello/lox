@@ -1,7 +1,8 @@
 use crate::ast::Expr;
+use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum RuntimeError {
     #[error("Invalid operation")]
     InvalidOperation,
@@ -12,18 +13,20 @@ pub enum RuntimeError {
     #[error("Unimplemented expression: {expr}")]
     Unimplemented { expr: Expr },
 
-    #[error("Environment error: {0}")]
-    Environment(#[from] EnvironmentError),
-
     #[error("Continue")]
     Continue,
 
     #[error("Break")]
     Break,
+
+    // pass through error and diagnostics
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    Environment(#[from] EnvironmentError),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum EnvironmentError {
-    #[error("Undefined variable: {name}")]
+    #[error("Undefined variable '{name}'")]
     UndefinedVariable { name: String },
 }

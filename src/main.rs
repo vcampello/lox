@@ -40,14 +40,14 @@ fn run_prompt() {
                     continue;
                 }
 
-                // TODO: refactor this entire file
-                if let Err(e) = lox.run(source) {
-                    let source_code = NamedSource::new("asdfasdf", source.to_string());
-                    eprintln!("{:?}", Report::new(e).with_source_code(source_code));
+                // TODO: consolidate the reporter. There's a lot more work to be done
+                if let Err(error) = lox.run(source) {
+                    let source_code = NamedSource::new("REPL", source.to_string());
+                    eprintln!("{:?}", Report::new(error).with_source_code(source_code));
                 }
             }
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("REPL error: {e}");
                 process::exit(65)
             }
         };
@@ -60,14 +60,15 @@ fn run_prompt() {
 fn run_file(path: &str) {
     let mut lox = Lox::new();
 
-    let Ok(src) = fs::read_to_string(path) else {
+    let Ok(source) = fs::read_to_string(path) else {
         eprintln!("Failed to read {path}");
         process::exit(65)
     };
 
-    // TODO: implement Reporter::report_error;
-    if let Err(error) = lox.run(&src) {
-        eprintln!("{error:#?}");
+    // TODO: consolidate the reporter. There's a lot more work to be done
+    if let Err(error) = lox.run(&source) {
+        let source_code = NamedSource::new(path, source.to_string());
+        eprintln!("{:?}", Report::new(error).with_source_code(source_code));
         process::exit(65);
     }
     // Chapter 7 adds something along the lines of `had_runtime_error` => exit(70)
