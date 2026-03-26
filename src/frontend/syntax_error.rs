@@ -4,7 +4,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
 pub enum SyntaxError {
-    #[error("Parser error: {0}")]
+    // pass through error and diagnostics
+    #[error(transparent)]
     Parser(#[from] ParserError),
 
     // pass through error and diagnostics

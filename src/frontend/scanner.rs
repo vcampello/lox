@@ -112,7 +112,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn to_span(&self) -> Span {
-        Span::new(self.line, self.col)
+        Span::new(self.line, self.col, self.to_offset_all())
     }
 
     /// Capture the entire source code for Errors

@@ -1,4 +1,4 @@
-use crate::{ast::Expr, backend::EnvironmentError};
+use crate::ast::Expr;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
