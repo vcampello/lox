@@ -1,9 +1,18 @@
-use super::{EnvironmentError, Value};
+use thiserror::Error;
+
+use super::Value;
 use std::collections::HashMap;
 
 pub type Scope = HashMap<String, Value>;
 
 pub type EnvResult<T> = Result<T, EnvironmentError>;
+
+// NOTE: this error should be self contained as the called needs to add extra information about the token location.
+#[derive(Error, Debug)]
+pub enum EnvironmentError {
+    #[error("Undefined variable '{name}'")]
+    UndefinedVariable { name: String },
+}
 
 #[derive(Debug, Default)]
 pub struct Env {

@@ -1,5 +1,3 @@
-use crate::frontend::Span;
-
 use super::token::{Token, TokenType};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;

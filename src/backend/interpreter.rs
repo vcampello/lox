@@ -1,3 +1,5 @@
+use miette::SourceSpan;
+
 use super::*;
 use crate::{
     ast::{Expr, Stmt},
@@ -242,11 +244,27 @@ impl Interpreter {
                 _ => Err(RuntimeError::InvalidOperation),
             },
 
-            Expr::Variable { name } => Ok(self.env.get(&name.lexeme)?.clone()),
+            Expr::Variable { name } => {
+                self.env
+                    .get(&name.lexeme)
+                    // TODO: map e properly
+                    .map_err(|_| RuntimeError::UndefinedVariable {
+                        name: name.lexeme.clone(),
+                        // FIXME: add the real span
+                        at: SourceSpan::from(0),
+                    })
+                    .cloned()
+            }
 
             Expr::Assignment { name, value } => {
                 let result = self.evaluate(value)?;
-                self.env.assign(&name.lexeme, &result)?;
+                self.env.assign(&name.lexeme, &result).map_err(|_| {
+                    RuntimeError::UndefinedVariable {
+                        name: name.lexeme.clone(),
+                        // FIXME: add the real span
+                        at: SourceSpan::from(0),
+                    }
+                })?;
                 Ok(result)
             }
         }

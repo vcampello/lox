@@ -1,5 +1,5 @@
-use crate::ast::Expr;
-use miette::Diagnostic;
+use crate::{ast::Expr, backend::EnvironmentError};
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
@@ -19,14 +19,10 @@ pub enum RuntimeError {
     #[error("Break")]
     Break,
 
-    // pass through error and diagnostics
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    Environment(#[from] EnvironmentError),
-}
-
-#[derive(Error, Debug, Diagnostic)]
-pub enum EnvironmentError {
     #[error("Undefined variable '{name}'")]
-    UndefinedVariable { name: String },
+    UndefinedVariable {
+        name: String,
+        #[label("Is '{name}' actually defined?")]
+        at: SourceSpan,
+    },
 }
