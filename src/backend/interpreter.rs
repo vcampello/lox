@@ -174,8 +174,8 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let right_resut = self.evaluate(right)?;
                 let left_result = self.evaluate(left)?;
+                let right_resut = self.evaluate(right)?;
 
                 match (&operator.token_type, left_result, right_resut) {
                     // arithmetic
