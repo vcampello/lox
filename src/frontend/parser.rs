@@ -266,29 +266,37 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> ParserResult<Stmt> {
-        // FIXME: use match instead of this mess
-        if self.match_tokens(&[TokenType::Print]).is_some() {
-            return self.print_stmt();
+        match self.iter.peek().map(|token| &token.token_type) {
+            Some(TokenType::Print) => {
+                self.advance();
+                self.print_stmt()
+            }
+            Some(TokenType::Continue) => {
+                self.advance();
+                self.continue_stmt()
+            }
+            Some(TokenType::Break) => {
+                self.advance();
+                self.break_stmt()
+            }
+            Some(TokenType::For) => {
+                self.advance();
+                self.for_stmt()
+            }
+            Some(TokenType::While) => {
+                self.advance();
+                self.while_stmt()
+            }
+            Some(TokenType::LeftBrace) => {
+                self.advance();
+                self.block_stmt()
+            }
+            Some(TokenType::If) => {
+                self.advance();
+                self.if_stmt()
+            }
+            _ => self.expression_stmt(),
         }
-        if self.match_tokens(&[TokenType::Continue]).is_some() {
-            return self.continue_stmt();
-        }
-        if self.match_tokens(&[TokenType::Break]).is_some() {
-            return self.break_stmt();
-        }
-        if self.match_tokens(&[TokenType::For]).is_some() {
-            return self.for_stmt();
-        }
-        if self.match_tokens(&[TokenType::While]).is_some() {
-            return self.while_stmt();
-        }
-        if self.match_tokens(&[TokenType::LeftBrace]).is_some() {
-            return self.block_stmt();
-        }
-        if self.match_tokens(&[TokenType::If]).is_some() {
-            return self.if_stmt();
-        }
-        self.expression_stmt()
     }
 
     fn print_stmt(&mut self) -> ParserResult<Stmt> {
