@@ -388,6 +388,6 @@ impl<'a> Parser<'a> {
             "missing ; after variable declaration.",
         )?;
 
-        Ok(Stmt::Var { name, initializer })
+        Ok(Stmt::Variable { name, initializer })
     }
 }

@@ -1,4 +1,4 @@
-use crate::frontend::Token;
+use crate::{ast::AstPrinter, frontend::Token};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -34,26 +34,8 @@ pub enum Expr {
 
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Expr::Unary { operator, right } => write!(f, "Unary: {operator}{right}"),
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => write!(f, "Binary: {left} {operator} {right}"),
-            Expr::Grouping(expr) => write!(f, "Grouping: ({expr})"),
-            Expr::Variable { name } => write!(f, "Variable: {name}"),
-            Expr::Assignment { name, value } => write!(f, "Assignment: {name} = {value}"),
-            Expr::Logical {
-                left,
-                operator,
-                right,
-            } => write!(f, "Binary: {left} {operator} {right}"),
-            Expr::BoolLiteral(v) => write!(f, "BoolLiteral: {v}"),
-            Expr::NumberLiteral(v) => write!(f, "NumberLiteral: {v}"),
-            Expr::StringLiteral(v) => write!(f, "StringLiteral: {v}"),
-            Expr::Nil => write!(f, "nil"),
-        }
+        let mut printer = AstPrinter::new();
+        write!(f, "{}", self.accept(&mut printer))
     }
 }
 
@@ -92,62 +74,74 @@ impl Expr {
         }
     }
 
-    // REVIEW: this could be a trait and then there could be an AST printer
-    // NOTE: I'll see how far I can get without the visitor pattern suggested in the book
-    pub fn print(e: &Expr) -> String {
-        match e {
-            Expr::Unary { operator, right } => {
-                format!("({} {})", operator.lexeme, Expr::print(right))
-            }
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => {
-                format!(
-                    "({} {} {})",
-                    operator.lexeme,
-                    Expr::print(left),
-                    Expr::print(right)
-                )
-            }
-            Expr::Logical {
-                left,
-                operator,
-                right,
-            } => {
-                format!(
-                    "({} {} {})",
-                    operator.lexeme,
-                    Expr::print(left),
-                    Expr::print(right)
-                )
-            }
-            Expr::Assignment { name, value } => format!("{} {}", name.lexeme, Expr::print(value)),
+    pub fn accept<V: ExprVisitor>(&self, visitor: &mut V) -> V::Output {
+        walk_expr(self, visitor)
+    }
+}
 
-            Expr::StringLiteral(value) => value.clone(),
-            Expr::NumberLiteral(value) => value.to_string(),
-            Expr::BoolLiteral(value) => value.to_string(),
-            Expr::Nil => "nil".to_string(),
-            Expr::Grouping(e) => {
-                format!("(group {})", Expr::print(e))
-            }
-            Expr::Variable { name } => name.lexeme.to_string(),
-        }
+pub trait ExprVisitor {
+    type Output;
+
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output;
+
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output;
+
+    fn visit_grouping(&mut self, expr: &Expr) -> Self::Output;
+
+    fn visit_variable(&mut self, name: &Token) -> Self::Output;
+
+    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output;
+
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output;
+
+    fn visit_bool(&mut self, value: &bool) -> Self::Output;
+
+    fn visit_number(&mut self, value: &f64) -> Self::Output;
+
+    fn visit_string(&mut self, value: &str) -> Self::Output;
+
+    fn visit_nil(&mut self) -> Self::Output;
+}
+
+/// Default walking algorithm for expressions
+pub fn walk_expr<V: ExprVisitor>(expr: &Expr, visitor: &mut V) -> V::Output {
+    match expr {
+        Expr::Unary { operator, right } => visitor.visit_unary(operator, right),
+        Expr::Binary {
+            left,
+            operator,
+            right,
+        } => visitor.visit_binary(left, operator, right),
+        Expr::Grouping(expr) => visitor.visit_grouping(expr),
+        Expr::Variable { name } => visitor.visit_variable(name),
+        Expr::Assignment { name, value } => visitor.visit_assignment(name, value),
+        Expr::Logical {
+            left,
+            operator,
+            right,
+        } => visitor.visit_logical(left, operator, right),
+        Expr::BoolLiteral(v) => visitor.visit_bool(v),
+        Expr::NumberLiteral(v) => visitor.visit_number(v),
+        Expr::StringLiteral(v) => visitor.visit_string(v),
+        Expr::Nil => visitor.visit_nil(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::{Span, Token, TokenType};
+    use crate::{
+        ast::AstPrinter,
+        frontend::{Span, Token, TokenType},
+    };
 
     #[test]
     fn unary() {
         let operator = Token::new(TokenType::Minus, String::from("-"), Span::new(1, 1, (0, 1)));
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_unary(operator, literal);
-        let result = Expr::print(&e);
+        let mut printer = AstPrinter::new();
+        let result = e.accept(&mut printer);
         assert_eq!(result, "(- 1)")
     }
 
@@ -156,14 +150,16 @@ mod tests {
         let operator = Token::new(TokenType::Minus, String::from("-"), Span::new(1, 1, (0, 1)));
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_binary(literal.clone(), operator, literal);
-        let result = Expr::print(&e);
+        let mut printer = AstPrinter::new();
+        let result = e.accept(&mut printer);
         assert_eq!(result, "(- 1 1)")
     }
 
     #[test]
     fn literal() {
         let literal = Expr::NumberLiteral(1.0);
-        let result = Expr::print(&literal);
+        let mut printer = AstPrinter::new();
+        let result = literal.accept(&mut printer);
         assert_eq!(result, "1")
     }
 
@@ -171,7 +167,8 @@ mod tests {
     fn grouping() {
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_grouping(literal);
-        let result = Expr::print(&e);
+        let mut printer = AstPrinter::new();
+        let result = e.accept(&mut printer);
         assert_eq!(result, "(group 1)")
     }
 
@@ -182,11 +179,11 @@ mod tests {
             Expr::NumberLiteral(123.0),
         );
         let right = Expr::new_grouping(Expr::NumberLiteral(45.67));
-
         let operator = Token::new(TokenType::Star, "*".to_string(), Span::new(1, 1, (0, 1)));
 
         let e = Expr::new_binary(left, operator, right);
-        let result = Expr::print(&e);
+        let mut printer = AstPrinter::new();
+        let result = e.accept(&mut printer);
         assert_eq!(result, "(* (- 123) (group 45.67))")
     }
 }

@@ -25,7 +25,7 @@ impl Interpreter {
                     println!("{result}");
                 }
                 Stmt::Expression(expr) => _ = self.evaluate(expr)?,
-                Stmt::Var { name, initializer } => {
+                Stmt::Variable { name, initializer } => {
                     let value = match initializer {
                         Some(expr) => self.evaluate(expr)?,
                         None => Value::Nil,
