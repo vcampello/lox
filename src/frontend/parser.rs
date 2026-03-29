@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
             match self.declaration() {
                 Ok(stmt) => stmts.push(stmt),
                 Err(e) => {
-                    self.sychronise();
+                    self.synchronise();
                     return Err(e);
                 }
             }
@@ -33,7 +33,7 @@ impl<'a> Parser<'a> {
         Ok(stmts)
     }
 
-    fn sychronise(&mut self) {
+    fn synchronise(&mut self) {
         while let Some(token) = self.advance() {
             // statement boundary reached reached
             if token.token_type == TokenType::Semicolon {
