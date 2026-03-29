@@ -253,16 +253,14 @@ impl<'a> Parser<'a> {
     }
 
     fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
-        if !self.check(&token_type) {
-            return Err(ParserError::ExpectedToken {
-                token_type,
+        match self.advance() {
+            Some(token) if token.token_type == token_type => Ok(token),
+            Some(token) => Err(ParserError::ExpectedToken {
+                token_type: token.token_type.clone(),
                 message,
-            });
+            }),
+            None => Err(ParserError::UnexpectedEof { message }),
         }
-
-        // TODO: improve this. Maybe some kind of map?
-        // We know it's the right token because of self.check
-        Ok(self.advance().expect(message))
     }
 
     fn statement(&mut self) -> ParserResult<Stmt> {

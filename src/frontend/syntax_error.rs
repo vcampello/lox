@@ -37,6 +37,9 @@ pub enum ParserError {
         message: &'static str,
     },
 
+    #[error("Unexpected EOF: {message}")]
+    UnexpectedEof { message: &'static str },
+
     #[error("Expected expression")]
     ExpectedExpression,
 
