@@ -1,4 +1,3 @@
-use crate::ast::Expr;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -9,9 +8,6 @@ pub enum RuntimeError {
 
     #[error("Invalid arithmetic operation")]
     InvalidArithmeticOperation,
-
-    #[error("Unimplemented expression: {expr}")]
-    Unimplemented { expr: Expr },
 
     #[error("Continue")]
     Continue,
