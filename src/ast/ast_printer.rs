@@ -11,7 +11,7 @@ impl AstPrinter {
 }
 
 impl ExprVisitor for AstPrinter {
-    type ExprOutput = String;
+    type Output = String;
 
     fn visit_number(&mut self, value: &f64) -> String {
         value.to_string()
@@ -65,9 +65,9 @@ impl ExprVisitor for AstPrinter {
 }
 
 impl StmtVisitor for AstPrinter {
-    type StmtOutput = String;
+    type Output = String;
 
-    fn visit_block(&mut self, stmts: &[Stmt]) -> Self::StmtOutput {
+    fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output {
         let body = stmts
             .iter()
             .map(|stmt| stmt.accept(self))
@@ -76,15 +76,15 @@ impl StmtVisitor for AstPrinter {
         format!("(block {})", body)
     }
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::StmtOutput {
+    fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
         expr.accept(self)
     }
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::StmtOutput {
+    fn visit_print(&mut self, expr: &Expr) -> Self::Output {
         format!("(print {})", expr.accept(self))
     }
 
-    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::StmtOutput {
+    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output {
         match initializer {
             Some(expr) => format!("(var {} = {})", name.lexeme, expr.accept(self)),
             None => format!("(var {})", name.lexeme),
@@ -96,7 +96,7 @@ impl StmtVisitor for AstPrinter {
         condition: &Expr,
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
-    ) -> Self::StmtOutput {
+    ) -> Self::Output {
         let cond = condition.accept(self);
         let true_result = when_true.accept(self);
 
@@ -106,17 +106,17 @@ impl StmtVisitor for AstPrinter {
         }
     }
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::StmtOutput {
+    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
         let cond = condition.accept(self);
 
         format!("(while {} {})", cond, body.accept(self))
     }
 
-    fn visit_continue(&mut self) -> Self::StmtOutput {
+    fn visit_continue(&mut self) -> Self::Output {
         "continue".to_string()
     }
 
-    fn visit_break(&mut self) -> Self::StmtOutput {
+    fn visit_break(&mut self) -> Self::Output {
         "break".to_string()
     }
 
@@ -126,7 +126,7 @@ impl StmtVisitor for AstPrinter {
         condition: &Option<Expr>,
         increment: &Option<Expr>,
         body: &Stmt,
-    ) -> Self::StmtOutput {
+    ) -> Self::Output {
         let init = initializer
             .as_ref()
             .map(|stmt| stmt.accept(self))

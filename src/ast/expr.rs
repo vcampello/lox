@@ -74,37 +74,37 @@ impl Expr {
         }
     }
 
-    pub fn accept<V: ExprVisitor>(&self, visitor: &mut V) -> V::ExprOutput {
+    pub fn accept<V: ExprVisitor>(&self, visitor: &mut V) -> V::Output {
         walk_expr(self, visitor)
     }
 }
 
 pub trait ExprVisitor {
-    type ExprOutput;
+    type Output;
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::ExprOutput;
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output;
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::ExprOutput;
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output;
 
-    fn visit_grouping(&mut self, expr: &Expr) -> Self::ExprOutput;
+    fn visit_grouping(&mut self, expr: &Expr) -> Self::Output;
 
-    fn visit_variable(&mut self, name: &Token) -> Self::ExprOutput;
+    fn visit_variable(&mut self, name: &Token) -> Self::Output;
 
-    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::ExprOutput;
+    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output;
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::ExprOutput;
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output;
 
-    fn visit_bool(&mut self, value: &bool) -> Self::ExprOutput;
+    fn visit_bool(&mut self, value: &bool) -> Self::Output;
 
-    fn visit_number(&mut self, value: &f64) -> Self::ExprOutput;
+    fn visit_number(&mut self, value: &f64) -> Self::Output;
 
-    fn visit_string(&mut self, value: &str) -> Self::ExprOutput;
+    fn visit_string(&mut self, value: &str) -> Self::Output;
 
-    fn visit_nil(&mut self) -> Self::ExprOutput;
+    fn visit_nil(&mut self) -> Self::Output;
 }
 
 /// Default walking algorithm for expressions
-pub fn walk_expr<V: ExprVisitor>(expr: &Expr, visitor: &mut V) -> V::ExprOutput {
+pub fn walk_expr<V: ExprVisitor>(expr: &Expr, visitor: &mut V) -> V::Output {
     match expr {
         Expr::Unary { operator, right } => visitor.visit_unary(operator, right),
         Expr::Binary {
