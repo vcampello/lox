@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     ast::{Expr, ExprVisitor, Stmt, StmtVisitor, walk_expr, walk_stmt},
-    frontend::TokenType,
+    frontend::{Token, TokenType},
 };
 use std::slice;
 
@@ -55,11 +55,7 @@ impl StmtVisitor for Interpreter {
         Ok(())
     }
 
-    fn visit_variable(
-        &mut self,
-        name: &crate::frontend::Token,
-        initializer: &Option<Expr>,
-    ) -> Self::Output {
+    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output {
         let value = match initializer {
             Some(expr) => self.evaluate(expr)?,
             None => Value::Nil,
@@ -190,7 +186,7 @@ impl StmtVisitor for Interpreter {
 impl ExprVisitor for Interpreter {
     type Output = InterpreterResult<Value>;
 
-    fn visit_unary(&mut self, operator: &crate::frontend::Token, right: &Expr) -> Self::Output {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output {
         let right_result = self.evaluate(right)?;
 
         match (&operator.token_type, right_result) {
@@ -200,12 +196,7 @@ impl ExprVisitor for Interpreter {
         }
     }
 
-    fn visit_binary(
-        &mut self,
-        left: &Expr,
-        operator: &crate::frontend::Token,
-        right: &Expr,
-    ) -> Self::Output {
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
         let left_result = self.evaluate(left)?;
         let right_resut = self.evaluate(right)?;
 
@@ -240,7 +231,7 @@ impl ExprVisitor for Interpreter {
         self.evaluate(expr)
     }
 
-    fn visit_variable(&mut self, name: &crate::frontend::Token) -> Self::Output {
+    fn visit_variable(&mut self, name: &Token) -> Self::Output {
         self.env
             .get(&name.lexeme)
             .map_err(|_| RuntimeError::UndefinedVariable {
@@ -250,7 +241,7 @@ impl ExprVisitor for Interpreter {
             .cloned()
     }
 
-    fn visit_assignment(&mut self, name: &crate::frontend::Token, value: &Expr) -> Self::Output {
+    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output {
         let result = self.evaluate(value)?;
         self.env
             .assign(&name.lexeme, &result)
@@ -261,12 +252,7 @@ impl ExprVisitor for Interpreter {
         Ok(result)
     }
 
-    fn visit_logical(
-        &mut self,
-        left: &Expr,
-        operator: &crate::frontend::Token,
-        right: &Expr,
-    ) -> Self::Output {
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
         match operator.token_type {
             TokenType::And => {
                 let left_result = self.evaluate(left)?;
