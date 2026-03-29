@@ -3,7 +3,6 @@ use crate::{
     ast::{Expr, ExprVisitor, Stmt, StmtVisitor, walk_expr, walk_stmt},
     frontend::{Token, TokenType},
 };
-use std::slice;
 
 pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
@@ -19,13 +18,19 @@ impl Interpreter {
 
     pub fn interpret(&mut self, stmts: &[Stmt]) -> InterpreterResult<()> {
         for stmt in stmts.iter() {
-            walk_stmt(stmt, self)?;
+            self.eval_stmt(stmt)?;
         }
 
         Ok(())
     }
 
-    fn evaluate(&mut self, expr: &Expr) -> InterpreterResult<Value> {
+    /// Defines the statement evaluation algorithm
+    fn eval_stmt(&mut self, stmt: &Stmt) -> InterpreterResult<()> {
+        walk_stmt(stmt, self)
+    }
+
+    /// Defines the expression evaluation algorithm
+    fn eval_expr(&mut self, expr: &Expr) -> InterpreterResult<Value> {
         walk_expr(expr, self)
     }
 }
@@ -45,19 +50,19 @@ impl StmtVisitor for Interpreter {
     }
 
     fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
-        self.evaluate(expr)?;
+        self.eval_expr(expr)?;
         Ok(())
     }
 
     fn visit_print(&mut self, expr: &Expr) -> Self::Output {
-        let result = self.evaluate(expr)?;
+        let result = self.eval_expr(expr)?;
         println!("{result}");
         Ok(())
     }
 
     fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output {
         let value = match initializer {
-            Some(expr) => self.evaluate(expr)?,
+            Some(expr) => self.eval_expr(expr)?,
             None => Value::Nil,
         };
         self.env.define(&name.lexeme, &value);
@@ -70,13 +75,14 @@ impl StmtVisitor for Interpreter {
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
-        if self.evaluate(condition)?.is_truthy() {
+        if self.eval_expr(condition)?.is_truthy() {
             // else cute if branch
-            self.interpret(slice::from_ref(when_true))?;
+            self.eval_stmt(when_true)?;
         } else if let Some(stmt) = when_false {
             // execute else branch if defined
-            self.interpret(slice::from_ref(stmt))?;
+            self.eval_stmt(stmt)?;
         }
+
         Ok(())
     }
 
@@ -85,14 +91,14 @@ impl StmtVisitor for Interpreter {
         self.env.begin_scope();
 
         while self
-            .evaluate(condition)
+            .eval_expr(condition)
             // clean up condition scope in case of failure
             .inspect_err(|_| self.env.end_scope())?
             .is_truthy()
         {
             // capture the body result
             self.env.begin_scope(); // capture while body scope
-            let body_result = self.interpret(slice::from_ref(body));
+            let body_result = self.eval_stmt(body);
             self.env.end_scope(); // drop while body scope
 
             match body_result {
@@ -132,16 +138,15 @@ impl StmtVisitor for Interpreter {
 
         // run the initializer once
         if let Some(initializer) = initializer {
-            self.interpret(slice::from_ref(initializer))
-                .inspect_err(|_| {
-                    // drop for loop condition variables
-                    self.env.end_scope();
-                })?;
+            self.eval_stmt(initializer).inspect_err(|_| {
+                // drop for loop condition variables
+                self.env.end_scope();
+            })?;
         }
 
         while match condition {
             Some(expr) => self
-                .evaluate(expr)
+                .eval_expr(expr)
                 // clean up condition scope in case of failure
                 .inspect_err(|_| self.env.end_scope())?
                 .is_truthy(),
@@ -149,14 +154,14 @@ impl StmtVisitor for Interpreter {
         } {
             // capture the body result
             self.env.begin_scope(); // capture while body scope
-            let body_result = self.interpret(slice::from_ref(body));
+            let body_result = self.eval_stmt(body);
             self.env.end_scope(); // drop while body scope
 
             // run the increment expression for success & continue, but not break
             if let Some(increment) = increment {
                 match body_result {
                     Err(RuntimeError::Continue) | Ok(_) => {
-                        self.evaluate(increment)
+                        self.eval_expr(increment)
                             // clean up body scope in case of failure
                             .inspect_err(|_| self.env.end_scope())?;
                     }
@@ -187,7 +192,7 @@ impl ExprVisitor for Interpreter {
     type Output = InterpreterResult<Value>;
 
     fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output {
-        let right_result = self.evaluate(right)?;
+        let right_result = self.eval_expr(right)?;
 
         match (&operator.token_type, right_result) {
             (TokenType::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
@@ -197,8 +202,8 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
-        let left_result = self.evaluate(left)?;
-        let right_resut = self.evaluate(right)?;
+        let left_result = self.eval_expr(left)?;
+        let right_resut = self.eval_expr(right)?;
 
         match (&operator.token_type, left_result, right_resut) {
             // arithmetic
@@ -228,7 +233,7 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_grouping(&mut self, expr: &Expr) -> Self::Output {
-        self.evaluate(expr)
+        self.eval_expr(expr)
     }
 
     fn visit_variable(&mut self, name: &Token) -> Self::Output {
@@ -242,7 +247,7 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output {
-        let result = self.evaluate(value)?;
+        let result = self.eval_expr(value)?;
         self.env
             .assign(&name.lexeme, &result)
             .map_err(|_| RuntimeError::UndefinedVariable {
@@ -255,21 +260,21 @@ impl ExprVisitor for Interpreter {
     fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
         match operator.token_type {
             TokenType::And => {
-                let left_result = self.evaluate(left)?;
+                let left_result = self.eval_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
                     false => Ok(left_result),
                     // keep chaining so long as it's true
-                    true => self.evaluate(right),
+                    true => self.eval_expr(right),
                 }
             }
             TokenType::Or => {
-                let left_result = self.evaluate(left)?;
+                let left_result = self.eval_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
                     true => Ok(left_result),
                     // keep chaining
-                    false => self.evaluate(right),
+                    false => self.eval_expr(right),
                 }
             }
             _ => Err(RuntimeError::InvalidOperation),
