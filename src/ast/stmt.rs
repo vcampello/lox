@@ -30,7 +30,7 @@ pub enum Stmt {
 }
 
 impl Stmt {
-    pub fn accept<V: StmtVisitor>(&self, visitor: &mut V) -> V::Output {
+    pub fn accept<V: StmtVisitor>(&self, visitor: &mut V) -> V::StmtOutput {
         walk_stmt(self, visitor)
     }
 
@@ -72,28 +72,28 @@ impl std::fmt::Display for Stmt {
 }
 
 pub trait StmtVisitor {
-    type Output;
+    type StmtOutput;
 
-    fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output;
+    fn visit_block(&mut self, stmts: &[Stmt]) -> Self::StmtOutput;
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_expression(&mut self, expr: &Expr) -> Self::StmtOutput;
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_print(&mut self, expr: &Expr) -> Self::StmtOutput;
 
-    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output;
+    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::StmtOutput;
 
     fn visit_conditional(
         &mut self,
         condition: &Expr,
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
-    ) -> Self::Output;
+    ) -> Self::StmtOutput;
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output;
+    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::StmtOutput;
 
-    fn visit_continue(&mut self) -> Self::Output;
+    fn visit_continue(&mut self) -> Self::StmtOutput;
 
-    fn visit_break(&mut self) -> Self::Output;
+    fn visit_break(&mut self) -> Self::StmtOutput;
 
     fn visit_for(
         &mut self,
@@ -101,11 +101,11 @@ pub trait StmtVisitor {
         condition: &Option<Expr>,
         increment: &Option<Expr>,
         body: &Stmt,
-    ) -> Self::Output;
+    ) -> Self::StmtOutput;
 }
 
 /// Default walking algorithm for statements
-pub fn walk_stmt<V: StmtVisitor>(stmt: &Stmt, visitor: &mut V) -> V::Output {
+pub fn walk_stmt<V: StmtVisitor>(stmt: &Stmt, visitor: &mut V) -> V::StmtOutput {
     match stmt {
         Stmt::Block(stmts) => visitor.visit_block(stmts),
         Stmt::Expression(expr) => visitor.visit_expression(expr),
