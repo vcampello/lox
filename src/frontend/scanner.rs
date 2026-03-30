@@ -1,4 +1,4 @@
-use super::token::{Token, TokenType};
+use super::token::{Token, TokenKind};
 use crate::{common::Span, frontend::ScannerError};
 use std::{iter::Peekable, str::Chars};
 
@@ -48,40 +48,40 @@ impl<'a> Scanner<'a> {
         while let Some(char) = self.advance() {
             // Look at the current and next character
             match (char, self.chars.peek()) {
-                ('(', _) => self.add_token(TokenType::LeftParen),
-                (')', _) => self.add_token(TokenType::RightParen),
-                ('{', _) => self.add_token(TokenType::LeftBrace),
-                ('}', _) => self.add_token(TokenType::RightBrace),
-                (',', _) => self.add_token(TokenType::Comma),
-                ('.', _) => self.add_token(TokenType::Dot),
-                ('-', _) => self.add_token(TokenType::Minus),
-                ('+', _) => self.add_token(TokenType::Plus),
-                (';', _) => self.add_token(TokenType::Semicolon),
-                ('*', _) => self.add_token(TokenType::Star),
+                ('(', _) => self.add_token(TokenKind::LeftParen),
+                (')', _) => self.add_token(TokenKind::RightParen),
+                ('{', _) => self.add_token(TokenKind::LeftBrace),
+                ('}', _) => self.add_token(TokenKind::RightBrace),
+                (',', _) => self.add_token(TokenKind::Comma),
+                ('.', _) => self.add_token(TokenKind::Dot),
+                ('-', _) => self.add_token(TokenKind::Minus),
+                ('+', _) => self.add_token(TokenKind::Plus),
+                (';', _) => self.add_token(TokenKind::Semicolon),
+                ('*', _) => self.add_token(TokenKind::Star),
 
                 // negation
-                ('!', Some('=')) => self.add_token_and_skip(TokenType::BangEqual, 1),
-                ('!', _) => self.add_token(TokenType::Bang),
+                ('!', Some('=')) => self.add_token_and_skip(TokenKind::BangEqual, 1),
+                ('!', _) => self.add_token(TokenKind::Bang),
 
                 // equality
-                ('=', Some('=')) => self.add_token_and_skip(TokenType::EqualEqual, 1),
-                ('=', _) => self.add_token(TokenType::Equal),
+                ('=', Some('=')) => self.add_token_and_skip(TokenKind::EqualEqual, 1),
+                ('=', _) => self.add_token(TokenKind::Equal),
 
                 // greater than
-                ('>', Some('=')) => self.add_token_and_skip(TokenType::GreaterEqual, 1),
-                ('>', _) => self.add_token(TokenType::Greater),
+                ('>', Some('=')) => self.add_token_and_skip(TokenKind::GreaterEqual, 1),
+                ('>', _) => self.add_token(TokenKind::Greater),
 
                 // greater than
-                ('<', Some('=')) => self.add_token_and_skip(TokenType::LessEqual, 1),
-                ('<', _) => self.add_token(TokenType::Less),
+                ('<', Some('=')) => self.add_token_and_skip(TokenKind::LessEqual, 1),
+                ('<', _) => self.add_token(TokenKind::Less),
 
                 // slash or comment
                 ('/', Some('/')) => self.handle_comment(),
-                ('/', _) => self.add_token(TokenType::Slash),
+                ('/', _) => self.add_token(TokenKind::Slash),
 
                 // misc
-                ('?', _) => self.add_token(TokenType::QuestionMark),
-                (':', _) => self.add_token(TokenType::Colon),
+                ('?', _) => self.add_token(TokenKind::QuestionMark),
+                (':', _) => self.add_token(TokenKind::Colon),
 
                 // whitespace
                 (' ', _) => (),
@@ -106,7 +106,7 @@ impl<'a> Scanner<'a> {
             self.start = self.current;
         }
 
-        self.add_token(TokenType::Eof);
+        self.add_token(TokenKind::Eof);
 
         Ok(&self.tokens)
     }
@@ -130,13 +130,13 @@ impl<'a> Scanner<'a> {
         self.col = 1;
     }
 
-    fn add_token(&mut self, token_type: TokenType) {
+    fn add_token(&mut self, token_type: TokenKind) {
         let lexeme = &self.source[self.start..self.current];
         let token = Token::new(token_type, lexeme.to_string(), self.to_span());
         self.tokens.push(token);
     }
 
-    fn add_token_and_skip(&mut self, token_type: TokenType, skip_chars: usize) {
+    fn add_token_and_skip(&mut self, token_type: TokenKind, skip_chars: usize) {
         self.add_token(token_type);
 
         // skip n chars
@@ -194,7 +194,7 @@ impl<'a> Scanner<'a> {
 
         // consume closing "
         self.advance();
-        self.add_token(TokenType::String);
+        self.add_token(TokenKind::String);
 
         Ok(())
     }
@@ -224,7 +224,7 @@ impl<'a> Scanner<'a> {
             _ => (),
         };
 
-        self.add_token(TokenType::Number);
+        self.add_token(TokenKind::Number);
     }
 
     fn handle_identifier_and_keywords(&mut self) {
@@ -236,7 +236,7 @@ impl<'a> Scanner<'a> {
         let identifier = &self.source[self.start..self.current];
 
         // Convert to keyword or identifier
-        self.add_token(TokenType::to_identifier(identifier));
+        self.add_token(TokenKind::to_identifier(identifier));
     }
 
     fn is_identifier(c: &char) -> bool {

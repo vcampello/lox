@@ -1,6 +1,6 @@
 use std::{iter::Peekable, slice::Iter};
 
-use super::token::{Token, TokenType};
+use super::token::{Token, TokenKind};
 use crate::ast::{Expr, Stmt};
 use crate::frontend::ParserError;
 
@@ -20,7 +20,7 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> ParserResult<Vec<Stmt>> {
         let mut stmts = Vec::new();
 
-        while matches!(self.iter.peek(), Some(token) if token.token_type != TokenType::Eof) {
+        while matches!(self.iter.peek(), Some(token) if token.kind != TokenKind::Eof) {
             match self.declaration() {
                 Ok(stmt) => stmts.push(stmt),
                 Err(e) => {
@@ -36,23 +36,23 @@ impl<'a> Parser<'a> {
     fn synchronise(&mut self) {
         while let Some(token) = self.advance() {
             // statement boundary reached reached
-            if token.token_type == TokenType::Semicolon {
+            if token.kind == TokenKind::Semicolon {
                 return;
             }
 
             if let Some(next_token) = self.iter.peek() {
-                match next_token.token_type {
-                    TokenType::Class
-                    | TokenType::Fun
-                    | TokenType::Var
-                    | TokenType::For
-                    | TokenType::If
-                    | TokenType::While
-                    | TokenType::Break
-                    | TokenType::Continue
-                    | TokenType::Print
-                    | TokenType::Return
-                    | TokenType::Eof => return,
+                match next_token.kind {
+                    TokenKind::Class
+                    | TokenKind::Fun
+                    | TokenKind::Var
+                    | TokenKind::For
+                    | TokenKind::If
+                    | TokenKind::While
+                    | TokenKind::Break
+                    | TokenKind::Continue
+                    | TokenKind::Print
+                    | TokenKind::Return
+                    | TokenKind::Eof => return,
                     _ => continue,
                 };
             }
@@ -63,15 +63,15 @@ impl<'a> Parser<'a> {
         self.iter.next()
     }
 
-    fn check(&mut self, token_type: &TokenType) -> bool {
-        matches!(self.iter.peek(), Some(t) if t.token_type == *token_type)
+    fn check(&mut self, token_type: &TokenKind) -> bool {
+        matches!(self.iter.peek(), Some(t) if t.kind == *token_type)
     }
 
     fn is_eof(&mut self) -> bool {
-        self.check(&TokenType::Eof)
+        self.check(&TokenKind::Eof)
     }
 
-    fn match_tokens(&mut self, token_types: &[TokenType]) -> Option<Token> {
+    fn match_tokens(&mut self, token_types: &[TokenKind]) -> Option<Token> {
         for token_type in token_types.iter() {
             if self.check(token_type) {
                 return self.advance().cloned();
@@ -85,7 +85,7 @@ impl<'a> Parser<'a> {
     fn or(&mut self) -> ParserResult<Expr> {
         let mut expr = self.and()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::Or]) {
+        while let Some(token) = self.match_tokens(&[TokenKind::Or]) {
             let operator = token;
             let right = self.or()?;
             expr = Expr::new_logical(expr, operator, right)
@@ -98,7 +98,7 @@ impl<'a> Parser<'a> {
     fn and(&mut self) -> ParserResult<Expr> {
         let mut expr = self.equality()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::And]) {
+        while let Some(token) = self.match_tokens(&[TokenKind::And]) {
             let operator = token;
             let right = self.equality()?;
             expr = Expr::new_logical(expr, operator, right)
@@ -116,7 +116,7 @@ impl<'a> Parser<'a> {
     fn assignment(&mut self) -> ParserResult<Expr> {
         let expr = self.or()?;
 
-        if let Some(equals) = self.match_tokens(&[TokenType::Equal]) {
+        if let Some(equals) = self.match_tokens(&[TokenKind::Equal]) {
             let value = self.assignment()?;
 
             return match expr {
@@ -132,7 +132,7 @@ impl<'a> Parser<'a> {
     fn equality(&mut self) -> ParserResult<Expr> {
         let mut expr = self.comparison()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::EqualEqual, TokenType::BangEqual]) {
+        while let Some(token) = self.match_tokens(&[TokenKind::EqualEqual, TokenKind::BangEqual]) {
             let operator = token;
             let right = self.comparison()?;
             expr = Expr::new_binary(expr, operator, right)
@@ -146,10 +146,10 @@ impl<'a> Parser<'a> {
         let mut expr = self.term()?;
 
         while let Some(token) = self.match_tokens(&[
-            TokenType::Greater,
-            TokenType::GreaterEqual,
-            TokenType::Less,
-            TokenType::LessEqual,
+            TokenKind::Greater,
+            TokenKind::GreaterEqual,
+            TokenKind::Less,
+            TokenKind::LessEqual,
         ]) {
             let operator = token;
             let right = self.term()?;
@@ -163,7 +163,7 @@ impl<'a> Parser<'a> {
     fn term(&mut self) -> ParserResult<Expr> {
         let mut expr = self.factor()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::Minus, TokenType::Plus]) {
+        while let Some(token) = self.match_tokens(&[TokenKind::Minus, TokenKind::Plus]) {
             let operator = token;
             let right = self.factor()?;
             expr = Expr::new_binary(expr, operator, right)
@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
     fn factor(&mut self) -> ParserResult<Expr> {
         let mut expr = self.unary()?;
 
-        while let Some(token) = self.match_tokens(&[TokenType::Slash, TokenType::Star]) {
+        while let Some(token) = self.match_tokens(&[TokenKind::Slash, TokenKind::Star]) {
             let operator = token;
             let right = self.unary()?;
             expr = Expr::new_binary(expr, operator, right)
@@ -187,7 +187,7 @@ impl<'a> Parser<'a> {
 
     /// unary → ( "!" | "-" ) unary | primary ;
     fn unary(&mut self) -> ParserResult<Expr> {
-        match self.match_tokens(&[TokenType::Bang, TokenType::Minus]) {
+        match self.match_tokens(&[TokenKind::Bang, TokenKind::Minus]) {
             Some(token) => {
                 let operator = token;
                 let right = self.unary()?;
@@ -202,18 +202,18 @@ impl<'a> Parser<'a> {
     fn primary(&mut self) -> ParserResult<Expr> {
         let token = self.advance().ok_or(ParserError::ExpectedExpression)?;
 
-        match &token.token_type {
-            TokenType::True => Ok(Expr::BoolLiteral(true)),
-            TokenType::False => Ok(Expr::BoolLiteral(false)),
-            TokenType::Nil => Ok(Expr::Nil),
-            TokenType::Number => token
+        match &token.kind {
+            TokenKind::True => Ok(Expr::BoolLiteral(true)),
+            TokenKind::False => Ok(Expr::BoolLiteral(false)),
+            TokenKind::Nil => Ok(Expr::Nil),
+            TokenKind::Number => token
                 .lexeme
                 .parse::<f64>()
                 .map_err(|_| ParserError::InvalidNumber {
                     token: token.clone(),
                 })
                 .map(Expr::NumberLiteral),
-            TokenType::String => {
+            TokenKind::String => {
                 // String lexeme includes quotes, strip them
                 let content = token
                     .lexeme
@@ -223,12 +223,12 @@ impl<'a> Parser<'a> {
                 Ok(Expr::StringLiteral(content.to_string()))
             }
 
-            TokenType::LeftParen => {
+            TokenKind::LeftParen => {
                 let expr = self.expression()?; // must be called before consuming
-                self.consume(TokenType::RightParen, "missing ) after expression.")?;
+                self.consume(TokenKind::RightParen, "missing ) after expression.")?;
                 Ok(Expr::new_grouping(expr))
             }
-            TokenType::Identifier => Ok(Expr::Variable {
+            TokenKind::Identifier => Ok(Expr::Variable {
                 name: token.clone(),
             }),
 
@@ -238,13 +238,13 @@ impl<'a> Parser<'a> {
 
     // ifStmt → "if" "(" expression ")" statement | ( "else" statement )? ;
     fn if_stmt(&mut self) -> ParserResult<Stmt> {
-        self.consume(TokenType::LeftParen, "missing ( after if")?;
+        self.consume(TokenKind::LeftParen, "missing ( after if")?;
         let condition = self.expression()?;
 
-        self.consume(TokenType::RightParen, "missing ) after if condition")?;
+        self.consume(TokenKind::RightParen, "missing ) after if condition")?;
         let when_true = self.statement()?;
 
-        let when_false = match self.match_tokens(&[TokenType::Else]).is_some() {
+        let when_false = match self.match_tokens(&[TokenKind::Else]).is_some() {
             true => Some(self.statement()?),
             false => None,
         };
@@ -252,11 +252,11 @@ impl<'a> Parser<'a> {
         Ok(Stmt::new_conditional(condition, when_true, when_false))
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &'static str) -> ParserResult<&Token> {
+    fn consume(&mut self, token_type: TokenKind, message: &'static str) -> ParserResult<&Token> {
         match self.advance() {
-            Some(token) if token.token_type == token_type => Ok(token),
+            Some(token) if token.kind == token_type => Ok(token),
             Some(token) => Err(ParserError::ExpectedToken {
-                token_type: token.token_type.clone(),
+                token_type: token.kind.clone(),
                 message,
             }),
             None => Err(ParserError::UnexpectedEof { message }),
@@ -264,32 +264,32 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> ParserResult<Stmt> {
-        match self.iter.peek().map(|token| &token.token_type) {
-            Some(TokenType::Print) => {
+        match self.iter.peek().map(|token| &token.kind) {
+            Some(TokenKind::Print) => {
                 self.advance();
                 self.print_stmt()
             }
-            Some(TokenType::Continue) => {
+            Some(TokenKind::Continue) => {
                 self.advance();
                 self.continue_stmt()
             }
-            Some(TokenType::Break) => {
+            Some(TokenKind::Break) => {
                 self.advance();
                 self.break_stmt()
             }
-            Some(TokenType::For) => {
+            Some(TokenKind::For) => {
                 self.advance();
                 self.for_stmt()
             }
-            Some(TokenType::While) => {
+            Some(TokenKind::While) => {
                 self.advance();
                 self.while_stmt()
             }
-            Some(TokenType::LeftBrace) => {
+            Some(TokenKind::LeftBrace) => {
                 self.advance();
                 self.block_stmt()
             }
-            Some(TokenType::If) => {
+            Some(TokenKind::If) => {
                 self.advance();
                 self.if_stmt()
             }
@@ -299,15 +299,15 @@ impl<'a> Parser<'a> {
 
     fn print_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "missing ; after expression")?;
+        self.consume(TokenKind::Semicolon, "missing ; after expression")?;
 
         Ok(Stmt::Print(expr))
     }
 
     fn while_stmt(&mut self) -> ParserResult<Stmt> {
-        self.consume(TokenType::LeftParen, "missing ( after while")?;
+        self.consume(TokenKind::LeftParen, "missing ( after while")?;
         let condition = self.expression()?;
-        self.consume(TokenType::RightParen, "missing } after while conditon")?;
+        self.consume(TokenKind::RightParen, "missing } after while conditon")?;
         let body = self.statement()?;
 
         Ok(Stmt::new_while(condition, body))
@@ -315,26 +315,26 @@ impl<'a> Parser<'a> {
 
     // forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
     fn for_stmt(&mut self) -> ParserResult<Stmt> {
-        self.consume(TokenType::LeftParen, "missing ( after for")?;
+        self.consume(TokenKind::LeftParen, "missing ( after for")?;
 
-        let initializer = match self.match_tokens(&[TokenType::Var, TokenType::Semicolon]) {
-            Some(token) if token.token_type == TokenType::Var => Some(self.var_declaration()?),
-            Some(token) if token.token_type == TokenType::Semicolon => None,
+        let initializer = match self.match_tokens(&[TokenKind::Var, TokenKind::Semicolon]) {
+            Some(token) if token.kind == TokenKind::Var => Some(self.var_declaration()?),
+            Some(token) if token.kind == TokenKind::Semicolon => None,
             _ => Some(self.expression_stmt()?),
         };
 
-        let condition = match self.check(&TokenType::Semicolon) {
+        let condition = match self.check(&TokenKind::Semicolon) {
             false => Some(self.expression()?),
             true => None,
         };
 
-        self.consume(TokenType::Semicolon, "missing ; after for condition")?;
+        self.consume(TokenKind::Semicolon, "missing ; after for condition")?;
 
-        let increment = match self.check(&TokenType::RightParen) {
+        let increment = match self.check(&TokenKind::RightParen) {
             false => Some(self.expression()?),
             true => None,
         };
-        self.consume(TokenType::RightParen, "missing ) after for conditon")?;
+        self.consume(TokenKind::RightParen, "missing ) after for conditon")?;
         let body = self.statement()?;
 
         Ok(Stmt::new_for(initializer, condition, increment, body))
@@ -343,36 +343,36 @@ impl<'a> Parser<'a> {
     fn block_stmt(&mut self) -> ParserResult<Stmt> {
         let mut stmts: Vec<Stmt> = Vec::new();
 
-        while !self.check(&TokenType::RightBrace) && !self.is_eof() {
+        while !self.check(&TokenKind::RightBrace) && !self.is_eof() {
             stmts.push(self.declaration()?);
         }
 
-        self.consume(TokenType::RightBrace, "missing } after block")?;
+        self.consume(TokenKind::RightBrace, "missing } after block")?;
 
         Ok(Stmt::Block(stmts))
     }
 
     fn expression_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "missing ; after expression")?;
+        self.consume(TokenKind::Semicolon, "missing ; after expression")?;
 
         Ok(Stmt::Expression(expr))
     }
 
     fn continue_stmt(&mut self) -> ParserResult<Stmt> {
-        self.consume(TokenType::Semicolon, "missing ; after continue")?;
+        self.consume(TokenKind::Semicolon, "missing ; after continue")?;
 
         Ok(Stmt::Continue)
     }
 
     fn break_stmt(&mut self) -> ParserResult<Stmt> {
-        self.consume(TokenType::Semicolon, "missing ; after break")?;
+        self.consume(TokenKind::Semicolon, "missing ; after break")?;
 
         Ok(Stmt::Break)
     }
 
     fn declaration(&mut self) -> ParserResult<Stmt> {
-        if self.match_tokens(&[TokenType::Var]).is_some() {
+        if self.match_tokens(&[TokenKind::Var]).is_some() {
             self.var_declaration()
         } else {
             self.statement()
@@ -381,16 +381,16 @@ impl<'a> Parser<'a> {
 
     fn var_declaration(&mut self) -> ParserResult<Stmt> {
         let name = self
-            .consume(TokenType::Identifier, "missing variable name.")?
+            .consume(TokenKind::Identifier, "missing variable name.")?
             .clone();
 
-        let initializer = match self.match_tokens(&[TokenType::Equal]) {
+        let initializer = match self.match_tokens(&[TokenKind::Equal]) {
             Some(_) => Some(self.expression()?),
             None => None,
         };
 
         self.consume(
-            TokenType::Semicolon,
+            TokenKind::Semicolon,
             "missing ; after variable declaration.",
         )?;
 

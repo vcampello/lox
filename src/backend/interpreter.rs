@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     ast::{Expr, ExprVisitor, Stmt, StmtVisitor, walk_expr, walk_stmt},
-    frontend::{Token, TokenType},
+    frontend::{Token, TokenKind},
 };
 
 pub type InterpreterResult<T> = Result<T, RuntimeError>;
@@ -194,9 +194,9 @@ impl ExprVisitor for Interpreter {
     fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output {
         let right_result = self.eval_expr(right)?;
 
-        match (&operator.token_type, right_result) {
-            (TokenType::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
-            (TokenType::Bang, v) => Ok(Value::Bool(!v.is_truthy())),
+        match (&operator.kind, right_result) {
+            (TokenKind::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
+            (TokenKind::Bang, v) => Ok(Value::Bool(!v.is_truthy())),
             _ => Err(RuntimeError::InvalidOperation),
         }
     }
@@ -205,28 +205,28 @@ impl ExprVisitor for Interpreter {
         let left_result = self.eval_expr(left)?;
         let right_resut = self.eval_expr(right)?;
 
-        match (&operator.token_type, left_result, right_resut) {
+        match (&operator.kind, left_result, right_resut) {
             // arithmetic
-            (TokenType::Slash, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l / r)),
-            (TokenType::Star, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l * r)),
-            (TokenType::Minus, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l - r)),
-            (TokenType::Plus, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
+            (TokenKind::Slash, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l / r)),
+            (TokenKind::Star, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l * r)),
+            (TokenKind::Minus, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l - r)),
+            (TokenKind::Plus, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
 
             // string concatenation
-            (TokenType::Plus, Value::String(l), r) => Ok(Value::String(l + &r.to_string())),
-            (TokenType::Plus, l, Value::String(r)) => Ok(Value::String(l.to_string() + &r)),
+            (TokenKind::Plus, Value::String(l), r) => Ok(Value::String(l + &r.to_string())),
+            (TokenKind::Plus, l, Value::String(r)) => Ok(Value::String(l.to_string() + &r)),
 
             // comparison
-            (TokenType::Greater, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l > r)),
-            (TokenType::GreaterEqual, Value::Number(l), Value::Number(r)) => {
+            (TokenKind::Greater, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l > r)),
+            (TokenKind::GreaterEqual, Value::Number(l), Value::Number(r)) => {
                 Ok(Value::Bool(l >= r))
             }
-            (TokenType::Less, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l < r)),
-            (TokenType::LessEqual, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l <= r)),
+            (TokenKind::Less, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l < r)),
+            (TokenKind::LessEqual, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l <= r)),
 
             // equality - number
-            (TokenType::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
-            (TokenType::BangEqual, l, r) => Ok(Value::Bool(l != r)),
+            (TokenKind::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
+            (TokenKind::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
             _ => Err(RuntimeError::InvalidOperation),
         }
@@ -259,8 +259,8 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
-        match operator.token_type {
-            TokenType::And => {
+        match operator.kind {
+            TokenKind::And => {
                 let left_result = self.eval_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
@@ -269,7 +269,7 @@ impl ExprVisitor for Interpreter {
                     true => self.eval_expr(right),
                 }
             }
-            TokenType::Or => {
+            TokenKind::Or => {
                 let left_result = self.eval_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit

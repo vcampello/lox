@@ -3,7 +3,7 @@ use std::fmt;
 use crate::common::Span;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenType {
+pub enum TokenKind {
     // Single-character tokens.
     LeftParen,
     RightParen,
@@ -58,106 +58,106 @@ pub enum TokenType {
     Eof,
 }
 
-impl TokenType {
-    pub fn to_identifier(keyword: &str) -> TokenType {
+impl TokenKind {
+    pub fn to_identifier(keyword: &str) -> TokenKind {
         match keyword {
             // Keywords.
-            "and" => TokenType::And,
-            "class" => TokenType::Class,
-            "else" => TokenType::Else,
-            "false" => TokenType::False,
-            "fun" => TokenType::Fun,
-            "for" => TokenType::For,
-            "if" => TokenType::If,
-            "nil" => TokenType::Nil,
-            "or" => TokenType::Or,
-            "print" => TokenType::Print,
-            "return" => TokenType::Return,
-            "super" => TokenType::Super,
-            "this" => TokenType::This,
-            "true" => TokenType::True,
-            "var" => TokenType::Var,
-            "while" => TokenType::While,
-            "continue" => TokenType::Continue,
-            "break" => TokenType::Break,
+            "and" => TokenKind::And,
+            "class" => TokenKind::Class,
+            "else" => TokenKind::Else,
+            "false" => TokenKind::False,
+            "fun" => TokenKind::Fun,
+            "for" => TokenKind::For,
+            "if" => TokenKind::If,
+            "nil" => TokenKind::Nil,
+            "or" => TokenKind::Or,
+            "print" => TokenKind::Print,
+            "return" => TokenKind::Return,
+            "super" => TokenKind::Super,
+            "this" => TokenKind::This,
+            "true" => TokenKind::True,
+            "var" => TokenKind::Var,
+            "while" => TokenKind::While,
+            "continue" => TokenKind::Continue,
+            "break" => TokenKind::Break,
 
             // Not a keyword
-            _ => TokenType::Identifier,
+            _ => TokenKind::Identifier,
         }
     }
 }
 
-impl fmt::Display for TokenType {
+impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: write a macro for this
         match self {
             // Single-character tokens.
-            TokenType::LeftParen => write!(f, "LeftParen"),
-            TokenType::RightParen => write!(f, "RightParen"),
-            TokenType::LeftBrace => write!(f, "LeftBrace"),
-            TokenType::RightBrace => write!(f, "RightBrace"),
-            TokenType::Comma => write!(f, "Comma"),
-            TokenType::Dot => write!(f, "Dot"),
-            TokenType::Minus => write!(f, "Minus"),
-            TokenType::Plus => write!(f, "Plus"),
-            TokenType::Semicolon => write!(f, "Semicolon"),
-            TokenType::Slash => write!(f, "Slash"),
-            TokenType::Star => write!(f, "Star"),
-            TokenType::QuestionMark => write!(f, "QuestionMark"),
-            TokenType::Colon => write!(f, "Colon"),
+            TokenKind::LeftParen => write!(f, "LeftParen"),
+            TokenKind::RightParen => write!(f, "RightParen"),
+            TokenKind::LeftBrace => write!(f, "LeftBrace"),
+            TokenKind::RightBrace => write!(f, "RightBrace"),
+            TokenKind::Comma => write!(f, "Comma"),
+            TokenKind::Dot => write!(f, "Dot"),
+            TokenKind::Minus => write!(f, "Minus"),
+            TokenKind::Plus => write!(f, "Plus"),
+            TokenKind::Semicolon => write!(f, "Semicolon"),
+            TokenKind::Slash => write!(f, "Slash"),
+            TokenKind::Star => write!(f, "Star"),
+            TokenKind::QuestionMark => write!(f, "QuestionMark"),
+            TokenKind::Colon => write!(f, "Colon"),
 
             // One or two character tokens.
-            TokenType::Bang => write!(f, "Bang"),
-            TokenType::BangEqual => write!(f, "BangEqual"),
-            TokenType::Equal => write!(f, "Equal"),
-            TokenType::EqualEqual => write!(f, "EqualEqual"),
-            TokenType::Greater => write!(f, "Greater"),
-            TokenType::GreaterEqual => write!(f, "GreaterEqual"),
-            TokenType::Less => write!(f, "Less"),
-            TokenType::LessEqual => write!(f, "LessEqual"),
+            TokenKind::Bang => write!(f, "Bang"),
+            TokenKind::BangEqual => write!(f, "BangEqual"),
+            TokenKind::Equal => write!(f, "Equal"),
+            TokenKind::EqualEqual => write!(f, "EqualEqual"),
+            TokenKind::Greater => write!(f, "Greater"),
+            TokenKind::GreaterEqual => write!(f, "GreaterEqual"),
+            TokenKind::Less => write!(f, "Less"),
+            TokenKind::LessEqual => write!(f, "LessEqual"),
 
             // Literals.
-            TokenType::Identifier => write!(f, "Identifier"),
-            TokenType::String => write!(f, "String"),
-            TokenType::Number => write!(f, "Number"),
+            TokenKind::Identifier => write!(f, "Identifier"),
+            TokenKind::String => write!(f, "String"),
+            TokenKind::Number => write!(f, "Number"),
 
             // Keywords.
-            TokenType::And => write!(f, "And"),
-            TokenType::Class => write!(f, "Class"),
-            TokenType::Else => write!(f, "Else"),
-            TokenType::False => write!(f, "False"),
-            TokenType::Fun => write!(f, "Fun"),
-            TokenType::For => write!(f, "For"),
-            TokenType::If => write!(f, "If"),
-            TokenType::Nil => write!(f, "Nil"),
-            TokenType::Or => write!(f, "Or"),
-            TokenType::Print => write!(f, "Print"),
-            TokenType::Return => write!(f, "Return"),
-            TokenType::Super => write!(f, "Super"),
-            TokenType::This => write!(f, "This"),
-            TokenType::True => write!(f, "True"),
-            TokenType::Var => write!(f, "Var"),
-            TokenType::While => write!(f, "While"),
-            TokenType::Continue => write!(f, "Continue"),
-            TokenType::Break => write!(f, "Break"),
+            TokenKind::And => write!(f, "And"),
+            TokenKind::Class => write!(f, "Class"),
+            TokenKind::Else => write!(f, "Else"),
+            TokenKind::False => write!(f, "False"),
+            TokenKind::Fun => write!(f, "Fun"),
+            TokenKind::For => write!(f, "For"),
+            TokenKind::If => write!(f, "If"),
+            TokenKind::Nil => write!(f, "Nil"),
+            TokenKind::Or => write!(f, "Or"),
+            TokenKind::Print => write!(f, "Print"),
+            TokenKind::Return => write!(f, "Return"),
+            TokenKind::Super => write!(f, "Super"),
+            TokenKind::This => write!(f, "This"),
+            TokenKind::True => write!(f, "True"),
+            TokenKind::Var => write!(f, "Var"),
+            TokenKind::While => write!(f, "While"),
+            TokenKind::Continue => write!(f, "Continue"),
+            TokenKind::Break => write!(f, "Break"),
 
             // Misc.
-            TokenType::Eof => write!(f, "Eof"),
+            TokenKind::Eof => write!(f, "Eof"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    pub token_type: TokenType,
+    pub kind: TokenKind,
     pub lexeme: String,
     pub span: Span,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, span: Span) -> Self {
+    pub fn new(token_type: TokenKind, lexeme: String, span: Span) -> Self {
         Self {
-            token_type,
+            kind: token_type,
             lexeme,
             span,
         }
@@ -166,6 +166,6 @@ impl Token {
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, " {}| {}", self.span.to_location(), self.token_type)
+        write!(f, " {}| {}", self.span.to_location(), self.kind)
     }
 }

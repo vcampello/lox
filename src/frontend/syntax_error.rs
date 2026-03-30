@@ -1,4 +1,4 @@
-use super::token::{Token, TokenType};
+use super::token::{Token, TokenKind};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -33,7 +33,7 @@ pub enum ScannerError {
 pub enum ParserError {
     #[error("Expected token: {message}")]
     ExpectedToken {
-        token_type: TokenType,
+        token_type: TokenKind,
         message: &'static str,
     },
 

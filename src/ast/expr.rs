@@ -133,12 +133,12 @@ mod tests {
     use crate::{
         ast::AstPrinter,
         common::Span,
-        frontend::{Token, TokenType},
+        frontend::{Token, TokenKind},
     };
 
     #[test]
     fn unary() {
-        let operator = Token::new(TokenType::Minus, String::from("-"), Span::new(1, 1, (0, 1)));
+        let operator = Token::new(TokenKind::Minus, String::from("-"), Span::new(1, 1, (0, 1)));
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_unary(operator, literal);
         let mut printer = AstPrinter::new();
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn binary() {
-        let operator = Token::new(TokenType::Minus, String::from("-"), Span::new(1, 1, (0, 1)));
+        let operator = Token::new(TokenKind::Minus, String::from("-"), Span::new(1, 1, (0, 1)));
         let literal = Expr::NumberLiteral(1.0);
         let e = Expr::new_binary(literal.clone(), operator, literal);
         let mut printer = AstPrinter::new();
@@ -176,11 +176,11 @@ mod tests {
     #[test]
     fn nested() {
         let left = Expr::new_unary(
-            Token::new(TokenType::Minus, "-".to_string(), Span::new(1, 1, (0, 1))),
+            Token::new(TokenKind::Minus, "-".to_string(), Span::new(1, 1, (0, 1))),
             Expr::NumberLiteral(123.0),
         );
         let right = Expr::new_grouping(Expr::NumberLiteral(45.67));
-        let operator = Token::new(TokenType::Star, "*".to_string(), Span::new(1, 1, (0, 1)));
+        let operator = Token::new(TokenKind::Star, "*".to_string(), Span::new(1, 1, (0, 1)));
 
         let e = Expr::new_binary(left, operator, right);
         let mut printer = AstPrinter::new();
