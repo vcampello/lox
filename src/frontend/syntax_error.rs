@@ -1,4 +1,5 @@
-use super::token::{Token, TokenKind};
+use super::TokenKind;
+use super::token::Token;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 

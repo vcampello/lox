@@ -1,6 +1,6 @@
 use std::{iter::Peekable, slice::Iter};
 
-use super::token::{Token, TokenKind};
+use super::{Token, TokenKind};
 use crate::ast::{Expr, Stmt};
 use crate::frontend::ParserError;
 

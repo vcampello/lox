@@ -1,4 +1,4 @@
-use super::token::{Token, TokenKind};
+use super::{Token, TokenKind};
 use crate::{common::Span, frontend::ScannerError};
 use std::{iter::Peekable, str::Chars};
 
