@@ -115,17 +115,25 @@ impl<'a> Scanner<'a> {
     }
 
     fn to_span(&self) -> Span {
-        Span::new(self.line, self.col, self.to_offset_all())
+        let offset = self.to_offset_all();
+        Span {
+            line: self.line,
+            col: self.col,
+            offset: offset.0,
+            length: offset.1,
+        }
     }
 
+    /// FIXME: rename this aka what does each tuple value actually mean?
     /// Capture the entire source code for Errors
     fn to_offset_all(&self) -> (usize, usize) {
         (self.start, self.current - self.start)
     }
 
+    /// FIXME: rename this aka what does each tuple value actually mean?
     /// Capture only the current source code offset for Errors
     fn to_offset(&self) -> (usize, usize) {
-        (self.current - 1, 1)
+        (self.current.saturating_sub(1), 1)
     }
 
     fn increase_line(&mut self) {

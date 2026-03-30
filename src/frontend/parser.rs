@@ -67,7 +67,7 @@ impl<'a> Parser<'a> {
         let next = self.iter.next();
 
         if let Some(token) = next {
-            self.last_span = token.span.clone();
+            self.last_span = token.span;
         }
 
         next
@@ -132,10 +132,10 @@ impl<'a> Parser<'a> {
             return match expr {
                 ExprKind::Variable { name } => Ok(ExprKind::new_assignment(name, value)),
                 _ => Err(ParserError {
-                    at: equals.span.offset.into(),
                     kind: ParserErrorKind::InvalidAssignmentTarget {
                         token_kind: equals.kind,
                     },
+                    at: equals.span.into(),
                 }),
             };
         }
@@ -234,7 +234,7 @@ impl<'a> Parser<'a> {
                     kind: ParserErrorKind::InvalidNumber {
                         lexeme: token.lexeme.clone(),
                     },
-                    at: token.span.offset.into(),
+                    at: token.span.into(),
                 })
                 .map(ExprKind::NumberLiteral),
             TokenKind::String => {
