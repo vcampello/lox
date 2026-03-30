@@ -1,30 +1,30 @@
-use crate::ast::{AstPrinter, Expr};
+use crate::ast::{AstPrinter, ExprKind};
 use crate::frontend::Token;
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Block(Vec<Stmt>),
-    Expression(Expr),
-    Print(Expr),
+    Expression(ExprKind),
+    Print(ExprKind),
     Variable {
         name: Token,
-        initializer: Option<Expr>,
+        initializer: Option<ExprKind>,
     },
     Conditional {
-        condition: Expr,
+        condition: ExprKind,
         when_true: Box<Stmt>,
         when_false: Option<Box<Stmt>>,
     },
     While {
-        condition: Expr,
+        condition: ExprKind,
         body: Box<Stmt>,
     },
     Continue,
     Break,
     For {
         initializer: Option<Box<Stmt>>,
-        condition: Option<Expr>,
-        increment: Option<Expr>,
+        condition: Option<ExprKind>,
+        increment: Option<ExprKind>,
         body: Box<Stmt>,
     },
 }
@@ -34,7 +34,7 @@ impl Stmt {
         walk_stmt(self, visitor)
     }
 
-    pub fn new_conditional(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
+    pub fn new_conditional(condition: ExprKind, when_true: Stmt, when_false: Option<Stmt>) -> Self {
         Self::Conditional {
             condition,
             when_true: Box::new(when_true),
@@ -42,7 +42,7 @@ impl Stmt {
         }
     }
 
-    pub fn new_while(condition: Expr, body: Stmt) -> Self {
+    pub fn new_while(condition: ExprKind, body: Stmt) -> Self {
         Self::While {
             condition,
             body: Box::new(body),
@@ -51,8 +51,8 @@ impl Stmt {
 
     pub fn new_for(
         initializer: Option<Stmt>,
-        condition: Option<Expr>,
-        increment: Option<Expr>,
+        condition: Option<ExprKind>,
+        increment: Option<ExprKind>,
         body: Stmt,
     ) -> Self {
         Self::For {
@@ -76,20 +76,20 @@ pub trait StmtVisitor {
 
     fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output;
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_expression(&mut self, expr: &ExprKind) -> Self::Output;
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_print(&mut self, expr: &ExprKind) -> Self::Output;
 
-    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output;
+    fn visit_variable(&mut self, name: &Token, initializer: &Option<ExprKind>) -> Self::Output;
 
     fn visit_conditional(
         &mut self,
-        condition: &Expr,
+        condition: &ExprKind,
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output;
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output;
+    fn visit_while(&mut self, condition: &ExprKind, body: &Stmt) -> Self::Output;
 
     fn visit_continue(&mut self) -> Self::Output;
 
@@ -98,8 +98,8 @@ pub trait StmtVisitor {
     fn visit_for(
         &mut self,
         initializer: &Option<Box<Stmt>>,
-        condition: &Option<Expr>,
-        increment: &Option<Expr>,
+        condition: &Option<ExprKind>,
+        increment: &Option<ExprKind>,
         body: &Stmt,
     ) -> Self::Output;
 }

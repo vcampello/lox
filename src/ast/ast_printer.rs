@@ -1,4 +1,4 @@
-use super::{Expr, ExprVisitor, Stmt, StmtVisitor};
+use super::{ExprKind, ExprVisitor, Stmt, StmtVisitor};
 use crate::frontend::Token;
 
 #[derive(Debug, Default)]
@@ -29,15 +29,15 @@ impl ExprVisitor for AstPrinter {
         "nil".to_string()
     }
 
-    fn visit_grouping(&mut self, expr: &Expr) -> String {
+    fn visit_grouping(&mut self, expr: &ExprKind) -> String {
         format!("(group {})", expr.accept(self))
     }
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> String {
+    fn visit_unary(&mut self, operator: &Token, right: &ExprKind) -> String {
         format!("({} {})", operator.lexeme, right.accept(self))
     }
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_binary(&mut self, left: &ExprKind, operator: &Token, right: &ExprKind) -> String {
         format!(
             "({} {} {})",
             operator.lexeme,
@@ -50,11 +50,11 @@ impl ExprVisitor for AstPrinter {
         name.lexeme.clone()
     }
 
-    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> String {
+    fn visit_assignment(&mut self, name: &Token, value: &ExprKind) -> String {
         format!("(= {} {})", name.lexeme, value.accept(self))
     }
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_logical(&mut self, left: &ExprKind, operator: &Token, right: &ExprKind) -> String {
         format!(
             "({} {} {})",
             operator.lexeme,
@@ -76,15 +76,15 @@ impl StmtVisitor for AstPrinter {
         format!("(block {})", body)
     }
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
+    fn visit_expression(&mut self, expr: &ExprKind) -> Self::Output {
         expr.accept(self)
     }
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::Output {
+    fn visit_print(&mut self, expr: &ExprKind) -> Self::Output {
         format!("(print {})", expr.accept(self))
     }
 
-    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output {
+    fn visit_variable(&mut self, name: &Token, initializer: &Option<ExprKind>) -> Self::Output {
         match initializer {
             Some(expr) => format!("(var {} = {})", name.lexeme, expr.accept(self)),
             None => format!("(var {})", name.lexeme),
@@ -93,7 +93,7 @@ impl StmtVisitor for AstPrinter {
 
     fn visit_conditional(
         &mut self,
-        condition: &Expr,
+        condition: &ExprKind,
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
@@ -106,7 +106,7 @@ impl StmtVisitor for AstPrinter {
         }
     }
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
+    fn visit_while(&mut self, condition: &ExprKind, body: &Stmt) -> Self::Output {
         let cond = condition.accept(self);
 
         format!("(while {} {})", cond, body.accept(self))
@@ -123,8 +123,8 @@ impl StmtVisitor for AstPrinter {
     fn visit_for(
         &mut self,
         initializer: &Option<Box<Stmt>>,
-        condition: &Option<Expr>,
-        increment: &Option<Expr>,
+        condition: &Option<ExprKind>,
+        increment: &Option<ExprKind>,
         body: &Stmt,
     ) -> Self::Output {
         let init = initializer

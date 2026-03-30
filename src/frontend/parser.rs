@@ -2,7 +2,7 @@ use std::{iter::Peekable, slice::Iter};
 
 use super::{ParserError, ParserErrorKind, Token, TokenKind};
 use crate::{
-    ast::{Expr, Stmt},
+    ast::{ExprKind, Stmt},
     common::Span,
 };
 
@@ -92,45 +92,45 @@ impl<'a> Parser<'a> {
     }
 
     // TODO: add production rules
-    fn or(&mut self) -> ParserResult<Expr> {
+    fn or(&mut self) -> ParserResult<ExprKind> {
         let mut expr = self.and()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::Or]) {
             let operator = token;
             let right = self.or()?;
-            expr = Expr::new_logical(expr, operator, right)
+            expr = ExprKind::new_logical(expr, operator, right)
         }
 
         Ok(expr)
     }
 
     // TODO: add production rules
-    fn and(&mut self) -> ParserResult<Expr> {
+    fn and(&mut self) -> ParserResult<ExprKind> {
         let mut expr = self.equality()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::And]) {
             let operator = token;
             let right = self.equality()?;
-            expr = Expr::new_logical(expr, operator, right)
+            expr = ExprKind::new_logical(expr, operator, right)
         }
 
         Ok(expr)
     }
 
     // TODO: add production rules
-    fn expression(&mut self) -> ParserResult<Expr> {
+    fn expression(&mut self) -> ParserResult<ExprKind> {
         self.assignment()
     }
 
     // TODO: add production rules
-    fn assignment(&mut self) -> ParserResult<Expr> {
+    fn assignment(&mut self) -> ParserResult<ExprKind> {
         let expr = self.or()?;
 
         if let Some(equals) = self.match_tokens(&[TokenKind::Equal]) {
             let value = self.assignment()?;
 
             return match expr {
-                Expr::Variable { name } => Ok(Expr::new_assignment(name, value)),
+                ExprKind::Variable { name } => Ok(ExprKind::new_assignment(name, value)),
                 _ => Err(ParserError {
                     at: equals.span.offset.into(),
                     kind: ParserErrorKind::InvalidAssignmentTarget {
@@ -144,20 +144,20 @@ impl<'a> Parser<'a> {
     }
 
     /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
-    fn equality(&mut self) -> ParserResult<Expr> {
+    fn equality(&mut self) -> ParserResult<ExprKind> {
         let mut expr = self.comparison()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::EqualEqual, TokenKind::BangEqual]) {
             let operator = token;
             let right = self.comparison()?;
-            expr = Expr::new_binary(expr, operator, right)
+            expr = ExprKind::new_binary(expr, operator, right)
         }
 
         Ok(expr)
     }
 
     /// comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    fn comparison(&mut self) -> ParserResult<Expr> {
+    fn comparison(&mut self) -> ParserResult<ExprKind> {
         let mut expr = self.term()?;
 
         while let Some(token) = self.match_tokens(&[
@@ -168,53 +168,53 @@ impl<'a> Parser<'a> {
         ]) {
             let operator = token;
             let right = self.term()?;
-            expr = Expr::new_binary(expr, operator, right)
+            expr = ExprKind::new_binary(expr, operator, right)
         }
 
         Ok(expr)
     }
 
     /// term → factor ( ( "-" | "+" ) factor )* ;
-    fn term(&mut self) -> ParserResult<Expr> {
+    fn term(&mut self) -> ParserResult<ExprKind> {
         let mut expr = self.factor()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::Minus, TokenKind::Plus]) {
             let operator = token;
             let right = self.factor()?;
-            expr = Expr::new_binary(expr, operator, right)
+            expr = ExprKind::new_binary(expr, operator, right)
         }
 
         Ok(expr)
     }
 
     /// factor → unary ( ( "/" | "*" ) unary )* ;
-    fn factor(&mut self) -> ParserResult<Expr> {
+    fn factor(&mut self) -> ParserResult<ExprKind> {
         let mut expr = self.unary()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::Slash, TokenKind::Star]) {
             let operator = token;
             let right = self.unary()?;
-            expr = Expr::new_binary(expr, operator, right)
+            expr = ExprKind::new_binary(expr, operator, right)
         }
 
         Ok(expr)
     }
 
     /// unary → ( "!" | "-" ) unary | primary ;
-    fn unary(&mut self) -> ParserResult<Expr> {
+    fn unary(&mut self) -> ParserResult<ExprKind> {
         match self.match_tokens(&[TokenKind::Bang, TokenKind::Minus]) {
             Some(token) => {
                 let operator = token;
                 let right = self.unary()?;
 
-                Ok(Expr::new_unary(operator, right))
+                Ok(ExprKind::new_unary(operator, right))
             }
             None => self.primary(),
         }
     }
 
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
-    fn primary(&mut self) -> ParserResult<Expr> {
+    fn primary(&mut self) -> ParserResult<ExprKind> {
         // in case there's no token
         let last_span = self.last_span.offset;
 
@@ -224,9 +224,9 @@ impl<'a> Parser<'a> {
         })?;
 
         match &token.kind {
-            TokenKind::True => Ok(Expr::BoolLiteral(true)),
-            TokenKind::False => Ok(Expr::BoolLiteral(false)),
-            TokenKind::Nil => Ok(Expr::Nil),
+            TokenKind::True => Ok(ExprKind::BoolLiteral(true)),
+            TokenKind::False => Ok(ExprKind::BoolLiteral(false)),
+            TokenKind::Nil => Ok(ExprKind::Nil),
             TokenKind::Number => token
                 .lexeme
                 .parse::<f64>()
@@ -236,7 +236,7 @@ impl<'a> Parser<'a> {
                     },
                     at: token.span.offset.into(),
                 })
-                .map(Expr::NumberLiteral),
+                .map(ExprKind::NumberLiteral),
             TokenKind::String => {
                 // String lexeme includes quotes, strip them
                 let content = token
@@ -244,15 +244,15 @@ impl<'a> Parser<'a> {
                     .strip_prefix('"')
                     .and_then(|s| s.strip_suffix('"'))
                     .unwrap_or(&token.lexeme);
-                Ok(Expr::StringLiteral(content.to_string()))
+                Ok(ExprKind::StringLiteral(content.to_string()))
             }
 
             TokenKind::LeftParen => {
                 let expr = self.expression()?; // must be called before consuming
                 self.consume(TokenKind::RightParen, "missing ) after expression.")?;
-                Ok(Expr::new_grouping(expr))
+                Ok(ExprKind::new_grouping(expr))
             }
-            TokenKind::Identifier => Ok(Expr::Variable {
+            TokenKind::Identifier => Ok(ExprKind::Variable {
                 name: token.clone(),
             }),
 

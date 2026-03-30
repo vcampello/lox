@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    ast::{Expr, ExprVisitor, Stmt, StmtVisitor, walk_expr, walk_stmt},
+    ast::{ExprKind, ExprVisitor, Stmt, StmtVisitor, walk_expr, walk_stmt},
     frontend::{Token, TokenKind},
 };
 
@@ -30,7 +30,7 @@ impl Interpreter {
     }
 
     /// Defines the expression evaluation algorithm
-    fn eval_expr(&mut self, expr: &Expr) -> InterpreterResult<Value> {
+    fn eval_expr(&mut self, expr: &ExprKind) -> InterpreterResult<Value> {
         walk_expr(expr, self)
     }
 }
@@ -49,18 +49,18 @@ impl StmtVisitor for Interpreter {
         result
     }
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
+    fn visit_expression(&mut self, expr: &ExprKind) -> Self::Output {
         self.eval_expr(expr)?;
         Ok(())
     }
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::Output {
+    fn visit_print(&mut self, expr: &ExprKind) -> Self::Output {
         let result = self.eval_expr(expr)?;
         println!("{result}");
         Ok(())
     }
 
-    fn visit_variable(&mut self, name: &Token, initializer: &Option<Expr>) -> Self::Output {
+    fn visit_variable(&mut self, name: &Token, initializer: &Option<ExprKind>) -> Self::Output {
         let value = match initializer {
             Some(expr) => self.eval_expr(expr)?,
             None => Value::Nil,
@@ -71,7 +71,7 @@ impl StmtVisitor for Interpreter {
 
     fn visit_conditional(
         &mut self,
-        condition: &Expr,
+        condition: &ExprKind,
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
@@ -86,7 +86,7 @@ impl StmtVisitor for Interpreter {
         Ok(())
     }
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
+    fn visit_while(&mut self, condition: &ExprKind, body: &Stmt) -> Self::Output {
         // capture condition variables separately
         self.env.begin_scope();
 
@@ -138,8 +138,8 @@ impl StmtVisitor for Interpreter {
     fn visit_for(
         &mut self,
         initializer: &Option<Box<Stmt>>,
-        condition: &Option<Expr>,
-        increment: &Option<Expr>,
+        condition: &Option<ExprKind>,
+        increment: &Option<ExprKind>,
         body: &Stmt,
     ) -> Self::Output {
         // capture for loop initializer in a new scope
@@ -208,7 +208,7 @@ impl StmtVisitor for Interpreter {
 impl ExprVisitor for Interpreter {
     type Output = InterpreterResult<Value>;
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output {
+    fn visit_unary(&mut self, operator: &Token, right: &ExprKind) -> Self::Output {
         let right_result = self.eval_expr(right)?;
 
         match (&operator.kind, right_result) {
@@ -220,7 +220,12 @@ impl ExprVisitor for Interpreter {
         }
     }
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
+    fn visit_binary(
+        &mut self,
+        left: &ExprKind,
+        operator: &Token,
+        right: &ExprKind,
+    ) -> Self::Output {
         let left_result = self.eval_expr(left)?;
         let right_resut = self.eval_expr(right)?;
 
@@ -253,7 +258,7 @@ impl ExprVisitor for Interpreter {
         }
     }
 
-    fn visit_grouping(&mut self, expr: &Expr) -> Self::Output {
+    fn visit_grouping(&mut self, expr: &ExprKind) -> Self::Output {
         self.eval_expr(expr)
     }
 
@@ -271,7 +276,7 @@ impl ExprVisitor for Interpreter {
             .cloned()
     }
 
-    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output {
+    fn visit_assignment(&mut self, name: &Token, value: &ExprKind) -> Self::Output {
         let result = self.eval_expr(value)?;
         self.env
             .assign(&name.lexeme, &result)
@@ -284,7 +289,12 @@ impl ExprVisitor for Interpreter {
         Ok(result)
     }
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
+    fn visit_logical(
+        &mut self,
+        left: &ExprKind,
+        operator: &Token,
+        right: &ExprKind,
+    ) -> Self::Output {
         match operator.kind {
             TokenKind::And => {
                 let left_result = self.eval_expr(left)?;
