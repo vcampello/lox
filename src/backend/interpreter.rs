@@ -237,11 +237,12 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_variable(&mut self, name: &Token) -> Self::Output {
+        let span = &name.span;
         self.env
             .get(&name.lexeme)
             .map_err(|_| RuntimeError::UndefinedVariable {
                 name: name.lexeme.clone(),
-                at: name.span.offset.into(),
+                at: span.offset.into(),
             })
             .cloned()
     }

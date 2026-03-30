@@ -1,5 +1,6 @@
 mod ast;
 mod backend;
+mod common;
 mod frontend;
 mod lox;
 mod lox_error;

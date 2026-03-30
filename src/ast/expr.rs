@@ -132,7 +132,8 @@ mod tests {
     use super::*;
     use crate::{
         ast::AstPrinter,
-        frontend::{Span, Token, TokenType},
+        common::Span,
+        frontend::{Token, TokenType},
     };
 
     #[test]

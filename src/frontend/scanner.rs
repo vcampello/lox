@@ -1,5 +1,5 @@
 use super::token::{Token, TokenType};
-use crate::frontend::{ScannerError, Span};
+use crate::{common::Span, frontend::ScannerError};
 use std::{iter::Peekable, str::Chars};
 
 pub type ScannerResult<T> = Result<T, ScannerError>;
