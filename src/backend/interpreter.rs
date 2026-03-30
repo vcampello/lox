@@ -101,15 +101,20 @@ impl StmtVisitor for Interpreter {
             let body_result = self.eval_stmt(body);
             self.env.end_scope(); // drop while body scope
 
+            // REVIEW: clean this up
             match body_result {
-                Err(RuntimeError::Continue) => continue,
-                Err(RuntimeError::Break) => break,
+                Ok(_) => {}
+                Err(RuntimeError {
+                    kind: RuntimeKind::Continue,
+                }) => continue,
+                Err(RuntimeError {
+                    kind: RuntimeKind::Break,
+                }) => break,
                 Err(e) => {
                     // early exit: drop while condition variables
                     self.env.end_scope();
                     return Err(e);
                 }
-                Ok(_) => {}
             };
         }
 
@@ -119,11 +124,15 @@ impl StmtVisitor for Interpreter {
     }
 
     fn visit_continue(&mut self) -> Self::Output {
-        Err(RuntimeError::Continue)
+        Err(RuntimeError {
+            kind: RuntimeKind::Continue,
+        })
     }
 
     fn visit_break(&mut self) -> Self::Output {
-        Err(RuntimeError::Break)
+        Err(RuntimeError {
+            kind: RuntimeKind::Break,
+        })
     }
 
     fn visit_for(
@@ -160,7 +169,10 @@ impl StmtVisitor for Interpreter {
             // run the increment expression for success & continue, but not break
             if let Some(increment) = increment {
                 match body_result {
-                    Err(RuntimeError::Continue) | Ok(_) => {
+                    Err(RuntimeError {
+                        kind: RuntimeKind::Continue,
+                    })
+                    | Ok(_) => {
                         self.eval_expr(increment)
                             // clean up body scope in case of failure
                             .inspect_err(|_| self.env.end_scope())?;
@@ -169,16 +181,21 @@ impl StmtVisitor for Interpreter {
                 }
             };
 
+            // REVIEW: clean this up
             // handle the result of the body evaluation
             match body_result {
-                Err(RuntimeError::Continue) => continue,
-                Err(RuntimeError::Break) => break,
+                Ok(_) => {}
+                Err(RuntimeError {
+                    kind: RuntimeKind::Continue,
+                }) => continue,
+                Err(RuntimeError {
+                    kind: RuntimeKind::Break,
+                }) => break,
                 Err(e) => {
                     // early exit: drop while condition variables
                     self.env.end_scope();
                     return Err(e);
                 }
-                Ok(_) => {}
             };
         }
         // drop for loop condition variables
@@ -197,7 +214,9 @@ impl ExprVisitor for Interpreter {
         match (&operator.kind, right_result) {
             (TokenKind::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
             (TokenKind::Bang, v) => Ok(Value::Bool(!v.is_truthy())),
-            _ => Err(RuntimeError::InvalidOperation),
+            _ => Err(RuntimeError {
+                kind: RuntimeKind::InvalidOperation,
+            }),
         }
     }
 
@@ -228,7 +247,9 @@ impl ExprVisitor for Interpreter {
             (TokenKind::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
             (TokenKind::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
-            _ => Err(RuntimeError::InvalidOperation),
+            _ => Err(RuntimeError {
+                kind: RuntimeKind::InvalidOperation,
+            }),
         }
     }
 
@@ -237,12 +258,15 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_variable(&mut self, name: &Token) -> Self::Output {
-        let span = &name.span;
+        // let span = &name.span;
         self.env
             .get(&name.lexeme)
-            .map_err(|_| RuntimeError::UndefinedVariable {
-                name: name.lexeme.clone(),
-                at: span.offset.into(),
+            // REVIEW: error construction. Maybe it needs a match
+            .map_err(|_| RuntimeError {
+                kind: RuntimeKind::UndefinedVariable {
+                    name: name.lexeme.clone(),
+                },
+                // at: span.offset.into(),
             })
             .cloned()
     }
@@ -251,9 +275,11 @@ impl ExprVisitor for Interpreter {
         let result = self.eval_expr(value)?;
         self.env
             .assign(&name.lexeme, &result)
-            .map_err(|_| RuntimeError::UndefinedVariable {
-                name: name.lexeme.clone(),
-                at: name.span.offset.into(),
+            .map_err(|_| RuntimeError {
+                kind: RuntimeKind::UndefinedVariable {
+                    name: name.lexeme.clone(),
+                    // at: name.span.offset.into(),
+                },
             })?;
         Ok(result)
     }
@@ -278,7 +304,9 @@ impl ExprVisitor for Interpreter {
                     false => self.eval_expr(right),
                 }
             }
-            _ => Err(RuntimeError::InvalidOperation),
+            _ => Err(RuntimeError {
+                kind: RuntimeKind::InvalidOperation,
+            }),
         }
     }
 
