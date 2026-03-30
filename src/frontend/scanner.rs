@@ -1,5 +1,8 @@
 use super::{Token, TokenKind};
-use crate::{common::Span, frontend::ScannerError};
+use crate::{
+    common::Span,
+    frontend::{ScannerError, ScannerErrorKind},
+};
 use std::{iter::Peekable, str::Chars};
 
 pub type ScannerResult<T> = Result<T, ScannerError>;
@@ -23,10 +26,10 @@ pub struct Scanner<'a> {
     /// Current character position in the source code
     current: usize,
 
-    /// Current line in the source code
+    /// Current line in the source code (0 indexed)
     line: usize,
 
-    /// Current column in the source code
+    /// Current column in the source code (0 indexed)
     col: usize,
 }
 
@@ -38,8 +41,8 @@ impl<'a> Scanner<'a> {
             chars: source.chars().peekable(),
             start: 0,
             current: 0,
-            line: 1,
-            col: 1,
+            line: 0,
+            col: 0,
         }
     }
 
@@ -94,9 +97,9 @@ impl<'a> Scanner<'a> {
                 (char, _) if char.is_ascii_digit() => self.handle_number(),
                 (char, _) if Scanner::is_identifier(&char) => self.handle_identifier_and_keywords(),
 
-                _ => {
-                    // TODO: synchronize like the parser
-                    return Err(ScannerError::UnknownToken {
+                (char, _) => {
+                    return Err(ScannerError {
+                        kind: ScannerErrorKind::UnexpectedCharacter(char),
                         at: self.to_offset_all().into(),
                     });
                 }
@@ -187,7 +190,8 @@ impl<'a> Scanner<'a> {
         }
 
         if self.chars.peek().is_none() {
-            return Err(ScannerError::UnterminatedString {
+            return Err(ScannerError {
+                kind: ScannerErrorKind::UnterminatedString,
                 at: self.to_offset().into(),
             });
         }

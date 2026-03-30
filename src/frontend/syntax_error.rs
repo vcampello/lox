@@ -1,5 +1,7 @@
+// Allow unused assignments - required by miette::Diagnostic derive macro
+#![allow(unused_assignments)]
+
 use super::TokenKind;
-use super::token::Token;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -7,32 +9,44 @@ use thiserror::Error;
 pub enum SyntaxError {
     // pass through error and diagnostics
     #[error(transparent)]
-    Parser(#[from] ParserError),
+    #[diagnostic(transparent)]
+    Scanner(#[from] ScannerError),
 
     // pass through error and diagnostics
     #[error(transparent)]
     #[diagnostic(transparent)]
-    Scanner(#[from] ScannerError),
+    Parser(#[from] ParserError),
 }
 
 #[derive(Error, Debug, Diagnostic)]
-pub enum ScannerError {
-    #[error("Unknown token")]
-    UnknownToken {
-        #[label("What is this?")]
-        at: SourceSpan,
-    },
+#[error("Scanner error")]
+pub struct ScannerError {
+    pub kind: ScannerErrorKind,
 
-    #[error("Unterminated string")]
-    UnterminatedString {
-        #[label("Missing terminating double quote")]
-        at: SourceSpan,
-    },
+    #[label("{kind}")]
+    pub at: SourceSpan,
+}
+
+#[derive(Error, Debug, Clone)]
+pub enum ScannerErrorKind {
+    #[error("unterminated string")]
+    UnterminatedString,
+    #[error("unexpected character '{0}'")]
+    UnexpectedCharacter(char),
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Parser error")]
+pub struct ParserError {
+    pub kind: ParserErrorKind,
+
+    #[label("{kind}")]
+    pub at: SourceSpan,
 }
 
 #[derive(Error, Debug)]
-pub enum ParserError {
-    #[error("Expected token: {message}")]
+pub enum ParserErrorKind {
+    #[error("Expected token {token_type}: {message}")]
     ExpectedToken {
         token_type: TokenKind,
         message: &'static str,
@@ -44,9 +58,9 @@ pub enum ParserError {
     #[error("Expected expression")]
     ExpectedExpression,
 
-    #[error("Invalid number: {} at {}", token.lexeme, token.span.to_location())]
-    InvalidNumber { token: Token },
+    #[error("Invalid number: {lexeme} ")]
+    InvalidNumber { lexeme: String },
 
-    #[error("Invalid assignment to {token}")]
-    InvalidAssignmentTarget { token: Token },
+    #[error("Invalid assignment to {token_kind}")]
+    InvalidAssignmentTarget { token_kind: TokenKind },
 }

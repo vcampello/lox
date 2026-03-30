@@ -1,19 +1,23 @@
 use std::{iter::Peekable, slice::Iter};
 
-use super::{Token, TokenKind};
-use crate::ast::{Expr, Stmt};
-use crate::frontend::ParserError;
+use super::{ParserError, ParserErrorKind, Token, TokenKind};
+use crate::{
+    ast::{Expr, Stmt},
+    common::Span,
+};
 
 pub type ParserResult<T> = Result<T, ParserError>;
 
 pub struct Parser<'a> {
     iter: Peekable<Iter<'a, Token>>,
+    last_span: Span,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: &'a [Token]) -> Self {
         Self {
             iter: tokens.iter().peekable(),
+            last_span: Span::default(),
         }
     }
 
@@ -60,7 +64,13 @@ impl<'a> Parser<'a> {
     }
 
     fn advance(&mut self) -> Option<&Token> {
-        self.iter.next()
+        let next = self.iter.next();
+
+        if let Some(token) = next {
+            self.last_span = token.span.clone();
+        }
+
+        next
     }
 
     fn check(&mut self, token_type: &TokenKind) -> bool {
@@ -121,7 +131,12 @@ impl<'a> Parser<'a> {
 
             return match expr {
                 Expr::Variable { name } => Ok(Expr::new_assignment(name, value)),
-                _ => Err(ParserError::InvalidAssignmentTarget { token: equals }),
+                _ => Err(ParserError {
+                    at: equals.span.offset.into(),
+                    kind: ParserErrorKind::InvalidAssignmentTarget {
+                        token_kind: equals.kind,
+                    },
+                }),
             };
         }
 
@@ -200,7 +215,13 @@ impl<'a> Parser<'a> {
 
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
-        let token = self.advance().ok_or(ParserError::ExpectedExpression)?;
+        // in case there's no token
+        let last_span = self.last_span.offset;
+
+        let token = self.advance().ok_or(ParserError {
+            at: last_span.into(),
+            kind: ParserErrorKind::ExpectedExpression,
+        })?;
 
         match &token.kind {
             TokenKind::True => Ok(Expr::BoolLiteral(true)),
@@ -209,8 +230,11 @@ impl<'a> Parser<'a> {
             TokenKind::Number => token
                 .lexeme
                 .parse::<f64>()
-                .map_err(|_| ParserError::InvalidNumber {
-                    token: token.clone(),
+                .map_err(|_| ParserError {
+                    kind: ParserErrorKind::InvalidNumber {
+                        lexeme: token.lexeme.clone(),
+                    },
+                    at: token.span.offset.into(),
                 })
                 .map(Expr::NumberLiteral),
             TokenKind::String => {
@@ -232,7 +256,10 @@ impl<'a> Parser<'a> {
                 name: token.clone(),
             }),
 
-            _ => Err(ParserError::ExpectedExpression),
+            _ => Err(ParserError {
+                kind: ParserErrorKind::ExpectedExpression,
+                at: self.last_span.offset.into(),
+            }),
         }
     }
 
@@ -253,13 +280,22 @@ impl<'a> Parser<'a> {
     }
 
     fn consume(&mut self, token_type: TokenKind, message: &'static str) -> ParserResult<&Token> {
+        // in case there's no token
+        let last_span = self.last_span.offset;
+
         match self.advance() {
             Some(token) if token.kind == token_type => Ok(token),
-            Some(token) => Err(ParserError::ExpectedToken {
-                token_type: token.kind.clone(),
-                message,
+            Some(token) => Err(ParserError {
+                at: token.span.offset.into(),
+                kind: ParserErrorKind::ExpectedToken {
+                    token_type: token.kind.clone(),
+                    message,
+                },
             }),
-            None => Err(ParserError::UnexpectedEof { message }),
+            None => Err(ParserError {
+                at: last_span.into(),
+                kind: ParserErrorKind::UnexpectedEof { message },
+            }),
         }
     }
 
