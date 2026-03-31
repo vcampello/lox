@@ -26,7 +26,7 @@ impl Interpreter {
 
     /// Defines the statement evaluation algorithm
     fn eval_stmt(&mut self, stmt: &Stmt) -> InterpreterResult<()> {
-        walk_stmt(stmt, self)
+        walk_stmt(&stmt.kind, self)
     }
 
     /// Defines the expression evaluation algorithm

@@ -274,7 +274,7 @@ impl<'a> Parser<'a> {
             false => None,
         };
 
-        Ok(Stmt::new_conditional(condition, when_true, when_false))
+        Ok(Stmt::condional(condition, when_true, when_false))
     }
 
     fn consume(&mut self, token_type: TokenKind, message: &'static str) -> ParserResult<&Token> {
@@ -335,7 +335,7 @@ impl<'a> Parser<'a> {
         let expr = self.expression()?;
         self.consume(TokenKind::Semicolon, "missing ; after expression")?;
 
-        Ok(Stmt::Print(expr))
+        Ok(Stmt::print(expr))
     }
 
     fn while_stmt(&mut self) -> ParserResult<Stmt> {
@@ -344,7 +344,7 @@ impl<'a> Parser<'a> {
         self.consume(TokenKind::RightParen, "missing } after while conditon")?;
         let body = self.statement()?;
 
-        Ok(Stmt::new_while(condition, body))
+        Ok(Stmt::while_loop(condition, body))
     }
 
     // forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
@@ -371,7 +371,7 @@ impl<'a> Parser<'a> {
         self.consume(TokenKind::RightParen, "missing ) after for conditon")?;
         let body = self.statement()?;
 
-        Ok(Stmt::new_for(initializer, condition, increment, body))
+        Ok(Stmt::for_loop(initializer, condition, increment, body))
     }
 
     fn block_stmt(&mut self) -> ParserResult<Stmt> {
@@ -383,26 +383,26 @@ impl<'a> Parser<'a> {
 
         self.consume(TokenKind::RightBrace, "missing } after block")?;
 
-        Ok(Stmt::Block(stmts))
+        Ok(Stmt::block(stmts, self.last_span))
     }
 
     fn expression_stmt(&mut self) -> ParserResult<Stmt> {
         let expr = self.expression()?;
         self.consume(TokenKind::Semicolon, "missing ; after expression")?;
 
-        Ok(Stmt::Expression(expr))
+        Ok(Stmt::expr_stmt(expr))
     }
 
     fn continue_stmt(&mut self) -> ParserResult<Stmt> {
         self.consume(TokenKind::Semicolon, "missing ; after continue")?;
 
-        Ok(Stmt::Continue)
+        Ok(Stmt::continue_stmt(self.last_span))
     }
 
     fn break_stmt(&mut self) -> ParserResult<Stmt> {
         self.consume(TokenKind::Semicolon, "missing ; after break")?;
 
-        Ok(Stmt::Break)
+        Ok(Stmt::break_stmt(self.last_span))
     }
 
     fn declaration(&mut self) -> ParserResult<Stmt> {
@@ -428,6 +428,6 @@ impl<'a> Parser<'a> {
             "missing ; after variable declaration.",
         )?;
 
-        Ok(Stmt::Variable { name, initializer })
+        Ok(Stmt::variable(name, initializer))
     }
 }

@@ -70,7 +70,7 @@ impl StmtVisitor for AstPrinter {
     fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output {
         let body = stmts
             .iter()
-            .map(|stmt| stmt.accept(self))
+            .map(|stmt| stmt.kind.accept(self))
             .collect::<Vec<_>>()
             .join(" ");
         format!("(block {})", body)
@@ -98,9 +98,9 @@ impl StmtVisitor for AstPrinter {
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
         let cond = condition.kind.accept(self);
-        let true_result = when_true.accept(self);
+        let true_result = when_true.kind.accept(self);
 
-        match when_false.as_ref().map(|stmt| stmt.accept(self)) {
+        match when_false.as_ref().map(|stmt| stmt.kind.accept(self)) {
             Some(false_result) => format!("(if {} {} {})", cond, true_result, false_result),
             None => format!("(if {} {})", cond, true_result),
         }
@@ -109,7 +109,7 @@ impl StmtVisitor for AstPrinter {
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
         let cond = condition.kind.accept(self);
 
-        format!("(while {} {})", cond, body.accept(self))
+        format!("(while {} {})", cond, body.kind.accept(self))
     }
 
     fn visit_continue(&mut self) -> Self::Output {
@@ -129,7 +129,7 @@ impl StmtVisitor for AstPrinter {
     ) -> Self::Output {
         let init = initializer
             .as_ref()
-            .map(|stmt| stmt.accept(self))
+            .map(|stmt| stmt.kind.accept(self))
             .unwrap_or("_".to_string());
 
         let cond = condition
@@ -142,6 +142,12 @@ impl StmtVisitor for AstPrinter {
             .map(|expr| expr.kind.accept(self))
             .unwrap_or("_".to_string());
 
-        format!("(for {}; {}; {}; {})", init, cond, inc, body.accept(self))
+        format!(
+            "(for {}; {}; {}; {})",
+            init,
+            cond,
+            inc,
+            body.kind.accept(self)
+        )
     }
 }
