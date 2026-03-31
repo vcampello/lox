@@ -63,6 +63,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // FIXME: this should consume
     fn advance(&mut self) -> Option<&Token> {
         let next = self.iter.next();
 
@@ -243,7 +244,8 @@ impl<'a> Parser<'a> {
                     .lexeme
                     .strip_prefix('"')
                     .and_then(|s| s.strip_suffix('"'))
-                    .unwrap_or(&token.lexeme);
+                    .unwrap_or(&token.lexeme)
+                    .to_string();
                 Ok(Expr::string_literal(content, token.span))
             }
 
@@ -252,7 +254,7 @@ impl<'a> Parser<'a> {
                 self.consume(TokenKind::RightParen, "missing ) after expression.")?;
                 Ok(Expr::grouping(expr))
             }
-            TokenKind::Identifier => Ok(Expr::variable(token, token.span)),
+            TokenKind::Identifier => Ok(Expr::variable(token.clone(), token.span)),
 
             _ => Err(ParserError {
                 kind: ParserErrorKind::ExpectedExpression,

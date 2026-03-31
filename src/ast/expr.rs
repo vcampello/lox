@@ -56,15 +56,13 @@ impl Expr {
         }
     }
 
-    /// REVIEW: this feels awkward compared to the others
-    pub fn variable(token: &Token, at: Span) -> Self {
+    pub fn variable(token: Token, at: Span) -> Self {
         Self {
             at,
-            kind: ExprKind::Variable { var: token.clone() },
+            kind: ExprKind::Variable { var: token },
         }
     }
 
-    /// REVIEW: this feels awkward compared to the others
     pub fn bool_literal(value: bool, at: Span) -> Self {
         Self {
             at,
@@ -72,7 +70,6 @@ impl Expr {
         }
     }
 
-    /// REVIEW: this feels awkward compared to the others
     pub fn number_literal(value: f64, at: Span) -> Self {
         Self {
             at,
@@ -80,11 +77,10 @@ impl Expr {
         }
     }
 
-    /// REVIEW: this feels awkward compared to the others
-    pub fn string_literal(value: &str, at: Span) -> Self {
+    pub fn string_literal(value: String, at: Span) -> Self {
         Self {
             at,
-            kind: ExprKind::StringLiteral(value.to_string()),
+            kind: ExprKind::StringLiteral(value),
         }
     }
 
