@@ -3,13 +3,13 @@ use crate::{ast::AstPrinter, common::Span, frontend::Token};
 #[derive(Debug, Clone)]
 pub struct Expr {
     pub kind: ExprKind,
-    pub at: Span,
+    pub span: Span,
 }
 
 impl Expr {
     pub fn unary(operator: Token, right: Expr) -> Self {
         Self {
-            at: operator.span.merge(&right.at),
+            span: operator.span.merge(&right.span),
             kind: ExprKind::Unary {
                 operator,
                 right: Box::new(right),
@@ -19,7 +19,7 @@ impl Expr {
 
     pub fn binary(left: Expr, operator: Token, right: Expr) -> Self {
         Self {
-            at: left.at.merge(&right.at),
+            span: left.span.merge(&right.span),
             kind: ExprKind::Binary {
                 left: Box::new(left),
                 operator,
@@ -30,14 +30,14 @@ impl Expr {
 
     pub fn grouping(expr: Expr) -> Self {
         Self {
-            at: expr.at,
+            span: expr.span,
             kind: ExprKind::Grouping(Box::new(expr)),
         }
     }
 
     pub fn assignment(name: Token, value: Expr) -> Self {
         Self {
-            at: name.span.merge(&value.at),
+            span: name.span.merge(&value.span),
             kind: ExprKind::Assignment {
                 name,
                 value: Box::new(value),
@@ -47,7 +47,7 @@ impl Expr {
 
     pub fn logical(left: Expr, operator: Token, right: Expr) -> Self {
         Self {
-            at: left.at.merge(&right.at),
+            span: left.span.merge(&right.span),
             kind: ExprKind::Logical {
                 left: Box::new(left),
                 operator,
@@ -58,35 +58,35 @@ impl Expr {
 
     pub fn variable(token: Token, at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: ExprKind::Variable { var: token },
         }
     }
 
     pub fn bool_literal(value: bool, at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: ExprKind::BoolLiteral(value),
         }
     }
 
     pub fn number_literal(value: f64, at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: ExprKind::NumberLiteral(value),
         }
     }
 
     pub fn string_literal(value: String, at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: ExprKind::StringLiteral(value),
         }
     }
 
     pub fn nil(at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: ExprKind::Nil,
         }
     }

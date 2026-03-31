@@ -4,35 +4,35 @@ use crate::frontend::Token;
 
 #[derive(Debug, Clone)]
 pub struct Stmt {
-    pub at: Span,
     pub kind: StmtKind,
+    pub span: Span,
 }
 
 impl Stmt {
     pub fn print(expr: Expr) -> Self {
         Self {
-            at: expr.at,
+            span: expr.span,
             kind: StmtKind::Print(expr),
         }
     }
 
     pub fn continue_stmt(at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: StmtKind::Continue,
         }
     }
 
     pub fn break_stmt(at: Span) -> Self {
         Self {
-            at,
+            span: at,
             kind: StmtKind::Break,
         }
     }
 
     pub fn expr_stmt(expr: Expr) -> Self {
         Self {
-            at: expr.at,
+            span: expr.span,
             kind: StmtKind::Expression(expr),
         }
     }
@@ -40,7 +40,7 @@ impl Stmt {
     pub fn block(stmts: Vec<Stmt>, fallback_span: Span) -> Self {
         let at = match stmts
             .iter()
-            .map(|stmt| stmt.at)
+            .map(|stmt| stmt.span)
             .reduce(|acc, e| acc.merge(&e))
         {
             Some(combined_span) => combined_span,
@@ -48,19 +48,19 @@ impl Stmt {
         };
 
         Self {
-            at,
+            span: at,
             kind: StmtKind::Block(stmts),
         }
     }
 
     pub fn variable(var: Token, initializer: Option<Expr>) -> Self {
         let at = match &initializer {
-            Some(expr) => var.span.merge(&expr.at),
+            Some(expr) => var.span.merge(&expr.span),
             None => var.span,
         };
 
         Self {
-            at,
+            span: at,
             kind: StmtKind::Variable { var, initializer },
         }
     }
@@ -69,12 +69,15 @@ impl Stmt {
 impl Stmt {
     pub fn condional(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
         let at = match &when_false {
-            Some(else_branch) => condition.at.merge(&when_true.at).merge(&else_branch.at),
-            None => condition.at.merge(&when_true.at),
+            Some(else_branch) => condition
+                .span
+                .merge(&when_true.span)
+                .merge(&else_branch.span),
+            None => condition.span.merge(&when_true.span),
         };
 
         Self {
-            at,
+            span: at,
             kind: StmtKind::Conditional {
                 condition,
                 when_true: Box::new(when_true),
@@ -85,7 +88,7 @@ impl Stmt {
 
     pub fn while_loop(condition: Expr, body: Stmt) -> Self {
         Self {
-            at: condition.at.merge(&body.at),
+            span: condition.span.merge(&body.span),
             kind: StmtKind::While {
                 condition,
                 body: Box::new(body),
@@ -99,21 +102,21 @@ impl Stmt {
         increment: Option<Expr>,
         body: Stmt,
     ) -> Self {
-        let mut at = body.at;
+        let mut at = body.span;
         if let Some(ref stmt) = initializer {
-            at = at.merge(&stmt.at)
+            at = at.merge(&stmt.span)
         }
 
         if let Some(ref expr) = condition {
-            at = at.merge(&expr.at)
+            at = at.merge(&expr.span)
         }
 
         if let Some(ref expr) = increment {
-            at = at.merge(&expr.at)
+            at = at.merge(&expr.span)
         }
 
         Self {
-            at,
+            span: at,
             kind: StmtKind::For {
                 initializer: initializer.map(Box::new),
                 condition,
