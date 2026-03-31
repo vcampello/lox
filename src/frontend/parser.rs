@@ -276,7 +276,7 @@ impl<'a> Parser<'a> {
             false => None,
         };
 
-        Ok(Stmt::condional(condition, when_true, when_false))
+        Ok(Stmt::conditional(condition, when_true, when_false))
     }
 
     fn consume(&mut self, token_type: TokenKind, message: &'static str) -> ParserResult<&Token> {

@@ -222,9 +222,9 @@ impl ExprVisitor for Interpreter {
 
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
         let left_result = self.eval_expr(left)?;
-        let right_resut = self.eval_expr(right)?;
+        let right_result = self.eval_expr(right)?;
 
-        match (&operator.kind, left_result, right_resut) {
+        match (&operator.kind, left_result, right_result) {
             // arithmetic
             (TokenKind::Slash, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l / r)),
             (TokenKind::Star, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l * r)),

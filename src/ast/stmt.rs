@@ -67,7 +67,7 @@ impl Stmt {
 }
 
 impl Stmt {
-    pub fn condional(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
+    pub fn conditional(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
         let at = match &when_false {
             Some(else_branch) => condition
                 .span
