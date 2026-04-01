@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn unary() {
         let operator = Token::new(TokenKind::Minus, String::from("-"), Span::default());
-        let op = UnaryOp::try_from(operator.kind.clone()).unwrap();
+        let op = UnaryOp::try_from(operator.kind).unwrap();
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::unary(Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn binary() {
         let operator = Token::new(TokenKind::Minus, String::from("-"), Span::default());
-        let op = BinaryOp::try_from(operator.kind.clone()).unwrap();
+        let op = BinaryOp::try_from(operator.kind).unwrap();
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::binary(literal.clone(), Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
@@ -367,14 +367,14 @@ mod tests {
     #[test]
     fn nested() {
         let left_op_tok = Token::new(TokenKind::Minus, "-".to_string(), Span::default());
-        let left_op = UnaryOp::try_from(left_op_tok.kind.clone()).unwrap();
+        let left_op = UnaryOp::try_from(left_op_tok.kind).unwrap();
         let left = Expr::unary(
             Spanned::new(left_op, left_op_tok.span),
             Expr::number_literal(123.0, Span::default()),
         );
         let right = Expr::grouping(Expr::number_literal(45.67, Span::default()));
         let op_tok = Token::new(TokenKind::Star, "*".to_string(), Span::default());
-        let op = BinaryOp::try_from(op_tok.kind.clone()).unwrap();
+        let op = BinaryOp::try_from(op_tok.kind).unwrap();
 
         let e = Expr::binary(left, Spanned::new(op, op_tok.span), right);
         let mut printer = AstPrinter::new();
