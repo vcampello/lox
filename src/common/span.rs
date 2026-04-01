@@ -43,3 +43,15 @@ impl From<Span> for SourceSpan {
         Self::from((value.offset, value.length))
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct Spanned<T> {
+    pub value: T,
+    pub span: Span,
+}
+
+impl<T> Spanned<T> {
+    pub fn new(value: T, span: Span) -> Self {
+        Self { span, value }
+    }
+}
