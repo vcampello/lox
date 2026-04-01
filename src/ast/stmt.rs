@@ -9,7 +9,7 @@ pub struct Stmt {
 }
 
 impl Stmt {
-    pub fn print(expr: Expr) -> Self {
+    pub fn print_stmt(expr: Expr) -> Self {
         Self {
             span: expr.span,
             kind: StmtKind::Print(expr),
@@ -33,11 +33,11 @@ impl Stmt {
     pub fn expr_stmt(expr: Expr) -> Self {
         Self {
             span: expr.span,
-            kind: StmtKind::Expression(expr),
+            kind: StmtKind::ExprStmt(expr),
         }
     }
 
-    pub fn block(stmts: Vec<Stmt>, fallback_span: Span) -> Self {
+    pub fn block_stmt(stmts: Vec<Stmt>, fallback_span: Span) -> Self {
         let at = match stmts
             .iter()
             .map(|stmt| stmt.span)
@@ -53,7 +53,7 @@ impl Stmt {
         }
     }
 
-    pub fn variable(var: Token, initializer: Option<Expr>) -> Self {
+    pub fn variable_stmt(var: Token, initializer: Option<Expr>) -> Self {
         let at = match &initializer {
             Some(expr) => var.span.merge(&expr.span),
             None => var.span,
@@ -64,10 +64,8 @@ impl Stmt {
             kind: StmtKind::Variable { var, initializer },
         }
     }
-}
 
-impl Stmt {
-    pub fn conditional(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
+    pub fn conditional_stmt(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
         let at = match &when_false {
             Some(else_branch) => condition
                 .span
@@ -132,7 +130,7 @@ impl Stmt {
 pub enum StmtKind {
     Block(Vec<Stmt>),
     // FIXME: rename to ExprStmt
-    Expression(Expr),
+    ExprStmt(Expr),
     Print(Expr),
     Variable {
         // FIXME: why Token instead of something specific?
@@ -208,7 +206,7 @@ pub trait StmtVisitor {
 pub fn walk_stmt<V: StmtVisitor>(stmt: &StmtKind, visitor: &mut V) -> V::Output {
     match stmt {
         StmtKind::Block(stmts) => visitor.visit_block(stmts),
-        StmtKind::Expression(expr) => visitor.visit_expression(expr),
+        StmtKind::ExprStmt(expr) => visitor.visit_expression(expr),
         StmtKind::Print(expr) => visitor.visit_print(expr),
         StmtKind::Variable {
             var: name,

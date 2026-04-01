@@ -297,7 +297,7 @@ impl<'a> Parser<'a> {
             false => None,
         };
 
-        Ok(Stmt::conditional(condition, when_true, when_false))
+        Ok(Stmt::conditional_stmt(condition, when_true, when_false))
     }
 
     fn consume(&mut self, token_type: TokenKind, message: &'static str) -> ParserResult<&Token> {
@@ -358,7 +358,7 @@ impl<'a> Parser<'a> {
         let expr = self.expression()?;
         self.consume(TokenKind::Semicolon, "missing ; after expression")?;
 
-        Ok(Stmt::print(expr))
+        Ok(Stmt::print_stmt(expr))
     }
 
     fn while_stmt(&mut self) -> ParserResult<Stmt> {
@@ -406,7 +406,7 @@ impl<'a> Parser<'a> {
 
         self.consume(TokenKind::RightBrace, "missing } after block")?;
 
-        Ok(Stmt::block(stmts, self.last_span))
+        Ok(Stmt::block_stmt(stmts, self.last_span))
     }
 
     fn expression_stmt(&mut self) -> ParserResult<Stmt> {
@@ -451,6 +451,6 @@ impl<'a> Parser<'a> {
             "missing ; after variable declaration.",
         )?;
 
-        Ok(Stmt::variable(name, initializer))
+        Ok(Stmt::variable_stmt(name, initializer))
     }
 }
