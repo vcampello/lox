@@ -1,4 +1,8 @@
-use crate::{ast::AstPrinter, common::Span, frontend::Token};
+use crate::{
+    ast::AstPrinter,
+    common::{Span, Spanned},
+    frontend::{ParserErrorKind, Token, TokenKind},
+};
 
 #[derive(Debug, Clone)]
 pub struct Expr {
@@ -7,7 +11,7 @@ pub struct Expr {
 }
 
 impl Expr {
-    pub fn unary(operator: Token, right: Expr) -> Self {
+    pub fn unary(operator: Spanned<UnaryOp>, right: Expr) -> Self {
         Self {
             span: operator.span.merge(&right.span),
             kind: ExprKind::Unary {
@@ -17,7 +21,7 @@ impl Expr {
         }
     }
 
-    pub fn binary(left: Expr, operator: Token, right: Expr) -> Self {
+    pub fn binary(left: Expr, operator: Spanned<BinaryOp>, right: Expr) -> Self {
         Self {
             span: left.span.merge(&right.span),
             kind: ExprKind::Binary {
@@ -45,7 +49,7 @@ impl Expr {
         }
     }
 
-    pub fn logical(left: Expr, operator: Token, right: Expr) -> Self {
+    pub fn logical(left: Expr, operator: Spanned<LogicalOp>, right: Expr) -> Self {
         Self {
             span: left.span.merge(&right.span),
             kind: ExprKind::Logical {
@@ -93,14 +97,131 @@ impl Expr {
 }
 
 #[derive(Debug, Clone)]
+pub enum UnaryOp {
+    /// Negative
+    Neg,
+    Not,
+}
+
+impl std::fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            UnaryOp::Neg => write!(f, "-"),
+            UnaryOp::Not => write!(f, "!"),
+        }
+    }
+}
+
+impl TryFrom<TokenKind> for UnaryOp {
+    type Error = ParserErrorKind;
+
+    fn try_from(token_kind: TokenKind) -> Result<Self, Self::Error> {
+        match token_kind {
+            TokenKind::Bang => Ok(UnaryOp::Not),
+            TokenKind::Minus => Ok(UnaryOp::Neg),
+            _ => Err(ParserErrorKind::InvalidOperator {
+                operation: "unary",
+                token_kind,
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum BinaryOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    EqualEqual,
+    BangEqual,
+}
+
+impl std::fmt::Display for BinaryOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use BinaryOp::*;
+        match self {
+            Add => write!(f, "+"),
+            Sub => write!(f, "-"),
+            Mul => write!(f, "*"),
+            Div => write!(f, "/"),
+            Greater => write!(f, ">"),
+            GreaterEqual => write!(f, ">="),
+            Less => write!(f, "<"),
+            LessEqual => write!(f, "<="),
+            EqualEqual => write!(f, "=="),
+            BangEqual => write!(f, "!="),
+        }
+    }
+}
+
+impl TryFrom<TokenKind> for BinaryOp {
+    type Error = ParserErrorKind;
+
+    fn try_from(kind: TokenKind) -> Result<Self, Self::Error> {
+        use BinaryOp::*;
+        match kind {
+            TokenKind::Plus => Ok(Add),
+            TokenKind::Minus => Ok(Sub),
+            TokenKind::Star => Ok(Mul),
+            TokenKind::Slash => Ok(Div),
+            TokenKind::Greater => Ok(Greater),
+            TokenKind::GreaterEqual => Ok(GreaterEqual),
+            TokenKind::Less => Ok(Less),
+            TokenKind::LessEqual => Ok(LessEqual),
+            TokenKind::EqualEqual => Ok(EqualEqual),
+            TokenKind::BangEqual => Ok(BangEqual),
+            _ => Err(ParserErrorKind::InvalidOperator {
+                operation: "binary",
+                token_kind: kind,
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum LogicalOp {
+    And,
+    Or,
+}
+
+impl std::fmt::Display for LogicalOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogicalOp::And => write!(f, "and"),
+            LogicalOp::Or => write!(f, "or"),
+        }
+    }
+}
+
+impl TryFrom<TokenKind> for LogicalOp {
+    type Error = ParserErrorKind;
+
+    fn try_from(kind: TokenKind) -> Result<Self, Self::Error> {
+        match kind {
+            TokenKind::And => Ok(LogicalOp::And),
+            TokenKind::Or => Ok(LogicalOp::Or),
+            _ => Err(ParserErrorKind::InvalidOperator {
+                operation: "logical",
+                token_kind: kind,
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ExprKind {
     Unary {
-        operator: Token,
+        operator: Spanned<UnaryOp>,
         right: Box<Expr>,
     },
     Binary {
         left: Box<Expr>,
-        operator: Token,
+        operator: Spanned<BinaryOp>,
         right: Box<Expr>,
     },
     Grouping(Box<Expr>),
@@ -113,7 +234,7 @@ pub enum ExprKind {
     },
     Logical {
         left: Box<Expr>,
-        operator: Token,
+        operator: Spanned<LogicalOp>,
         right: Box<Expr>,
     },
 
@@ -140,9 +261,14 @@ impl ExprKind {
 pub trait ExprVisitor {
     type Output;
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output;
+    fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> Self::Output;
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output;
+    fn visit_binary(
+        &mut self,
+        left: &Expr,
+        operator: &Spanned<BinaryOp>,
+        right: &Expr,
+    ) -> Self::Output;
 
     fn visit_grouping(&mut self, expr: &Expr) -> Self::Output;
 
@@ -150,7 +276,12 @@ pub trait ExprVisitor {
 
     fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output;
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output;
+    fn visit_logical(
+        &mut self,
+        left: &Expr,
+        operator: &Spanned<LogicalOp>,
+        right: &Expr,
+    ) -> Self::Output;
 
     fn visit_bool(&mut self, value: &bool) -> Self::Output;
 
@@ -197,8 +328,9 @@ mod tests {
     #[test]
     fn unary() {
         let operator = Token::new(TokenKind::Minus, String::from("-"), Span::default());
+        let op = UnaryOp::try_from(operator.kind.clone()).unwrap();
         let literal = Expr::number_literal(1.0, Span::default());
-        let e = Expr::unary(operator, literal);
+        let e = Expr::unary(Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
         let result = e.kind.accept(&mut printer);
         assert_eq!(result, "(- 1)")
@@ -207,8 +339,9 @@ mod tests {
     #[test]
     fn binary() {
         let operator = Token::new(TokenKind::Minus, String::from("-"), Span::default());
+        let op = BinaryOp::try_from(operator.kind.clone()).unwrap();
         let literal = Expr::number_literal(1.0, Span::default());
-        let e = Expr::binary(literal.clone(), operator, literal);
+        let e = Expr::binary(literal.clone(), Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
         let result = e.kind.accept(&mut printer);
         assert_eq!(result, "(- 1 1)")
@@ -233,14 +366,17 @@ mod tests {
 
     #[test]
     fn nested() {
+        let left_op_tok = Token::new(TokenKind::Minus, "-".to_string(), Span::default());
+        let left_op = UnaryOp::try_from(left_op_tok.kind.clone()).unwrap();
         let left = Expr::unary(
-            Token::new(TokenKind::Minus, "-".to_string(), Span::default()),
+            Spanned::new(left_op, left_op_tok.span),
             Expr::number_literal(123.0, Span::default()),
         );
         let right = Expr::grouping(Expr::number_literal(45.67, Span::default()));
-        let operator = Token::new(TokenKind::Star, "*".to_string(), Span::default());
+        let op_tok = Token::new(TokenKind::Star, "*".to_string(), Span::default());
+        let op = BinaryOp::try_from(op_tok.kind.clone()).unwrap();
 
-        let e = Expr::binary(left, operator, right);
+        let e = Expr::binary(left, Spanned::new(op, op_tok.span), right);
         let mut printer = AstPrinter::new();
         let result = e.kind.accept(&mut printer);
         assert_eq!(result, "(* (- 123) (group 45.67))")

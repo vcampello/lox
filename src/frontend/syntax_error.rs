@@ -35,6 +35,7 @@ pub enum ScannerErrorKind {
     UnexpectedCharacter(char),
 }
 
+// TODO: add factory methods
 #[derive(Error, Debug, Diagnostic)]
 #[error("Parser error")]
 pub struct ParserError {
@@ -46,9 +47,9 @@ pub struct ParserError {
 
 #[derive(Error, Debug)]
 pub enum ParserErrorKind {
-    #[error("Expected token {token_type}: {message}")]
+    #[error("Expected token {token_kind}: {message}")]
     ExpectedToken {
-        token_type: TokenKind,
+        token_kind: TokenKind,
         message: &'static str,
     },
 
@@ -63,4 +64,10 @@ pub enum ParserErrorKind {
 
     #[error("Invalid assignment to {token_kind}")]
     InvalidAssignmentTarget { token_kind: TokenKind },
+
+    #[error("Invalid {operation} operator: {token_kind}")]
+    InvalidOperator {
+        operation: &'static str,
+        token_kind: TokenKind,
+    },
 }

@@ -2,8 +2,8 @@ use std::{iter::Peekable, slice::Iter};
 
 use super::{ParserError, ParserErrorKind, Token, TokenKind};
 use crate::{
-    ast::{Expr, ExprKind, Stmt},
-    common::Span,
+    ast::{BinaryOp, Expr, ExprKind, LogicalOp, Stmt, UnaryOp},
+    common::{Span, Spanned},
 };
 
 pub type ParserResult<T> = Result<T, ParserError>;
@@ -97,9 +97,12 @@ impl<'a> Parser<'a> {
         let mut expr = self.and()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::Or]) {
-            let operator = token;
+            let operator = LogicalOp::try_from(token.kind).map_err(|kind| ParserError {
+                at: token.span.into(),
+                kind,
+            })?;
             let right = self.or()?;
-            expr = Expr::logical(expr, operator, right)
+            expr = Expr::logical(expr, Spanned::new(operator, token.span), right)
         }
 
         Ok(expr)
@@ -110,9 +113,12 @@ impl<'a> Parser<'a> {
         let mut expr = self.equality()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::And]) {
-            let operator = token;
+            let operator = LogicalOp::try_from(token.kind).map_err(|kind| ParserError {
+                at: token.span.into(),
+                kind,
+            })?;
             let right = self.equality()?;
-            expr = Expr::logical(expr, operator, right)
+            expr = Expr::logical(expr, Spanned::new(operator, token.span), right)
         }
 
         Ok(expr)
@@ -149,9 +155,12 @@ impl<'a> Parser<'a> {
         let mut expr = self.comparison()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::EqualEqual, TokenKind::BangEqual]) {
-            let operator = token;
+            let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
+                at: token.span.into(),
+                kind,
+            })?;
             let right = self.comparison()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, Spanned::new(operator, token.span), right)
         }
 
         Ok(expr)
@@ -167,9 +176,12 @@ impl<'a> Parser<'a> {
             TokenKind::Less,
             TokenKind::LessEqual,
         ]) {
-            let operator = token;
+            let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
+                at: token.span.into(),
+                kind,
+            })?;
             let right = self.term()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, Spanned::new(operator, token.span), right)
         }
 
         Ok(expr)
@@ -180,9 +192,12 @@ impl<'a> Parser<'a> {
         let mut expr = self.factor()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::Minus, TokenKind::Plus]) {
-            let operator = token;
+            let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
+                at: token.span.into(),
+                kind,
+            })?;
             let right = self.factor()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, Spanned::new(operator, token.span), right)
         }
 
         Ok(expr)
@@ -193,9 +208,12 @@ impl<'a> Parser<'a> {
         let mut expr = self.unary()?;
 
         while let Some(token) = self.match_tokens(&[TokenKind::Slash, TokenKind::Star]) {
-            let operator = token;
+            let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
+                at: token.span.into(),
+                kind,
+            })?;
             let right = self.unary()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, Spanned::new(operator, token.span), right)
         }
 
         Ok(expr)
@@ -205,10 +223,13 @@ impl<'a> Parser<'a> {
     fn unary(&mut self) -> ParserResult<Expr> {
         match self.match_tokens(&[TokenKind::Bang, TokenKind::Minus]) {
             Some(token) => {
-                let operator = token;
+                let operator = UnaryOp::try_from(token.kind).map_err(|kind| ParserError {
+                    at: token.span.into(),
+                    kind,
+                })?;
                 let right = self.unary()?;
 
-                Ok(Expr::unary(operator, right))
+                Ok(Expr::unary(Spanned::new(operator, token.span), right))
             }
             None => self.primary(),
         }
@@ -288,7 +309,7 @@ impl<'a> Parser<'a> {
             Some(token) => Err(ParserError {
                 at: token.span.offset.into(),
                 kind: ParserErrorKind::ExpectedToken {
-                    token_type: token.kind.clone(),
+                    token_kind: token.kind,
                     message,
                 },
             }),

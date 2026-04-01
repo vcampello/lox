@@ -1,7 +1,10 @@
 use super::*;
 use crate::{
-    ast::{Expr, ExprVisitor, Stmt, StmtVisitor, walk_expr, walk_stmt},
-    frontend::{Token, TokenKind},
+    ast::{
+        BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, UnaryOp, walk_expr, walk_stmt,
+    },
+    common::Spanned,
+    frontend::Token,
 };
 
 pub type InterpreterResult<T> = Result<T, RuntimeError>;
@@ -208,44 +211,47 @@ impl StmtVisitor for Interpreter {
 impl ExprVisitor for Interpreter {
     type Output = InterpreterResult<Value>;
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Self::Output {
+    fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> Self::Output {
         let right_result = self.eval_expr(right)?;
 
-        match (&operator.kind, right_result) {
-            (TokenKind::Minus, Value::Number(v)) => Ok(Value::Number(-v)),
-            (TokenKind::Bang, v) => Ok(Value::Bool(!v.is_truthy())),
+        match (&operator.value, right_result) {
+            (UnaryOp::Neg, Value::Number(v)) => Ok(Value::Number(-v)),
+            (UnaryOp::Not, v) => Ok(Value::Bool(!v.is_truthy())),
             _ => Err(RuntimeError {
                 kind: RuntimeKind::InvalidOperation,
             }),
         }
     }
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
-        let left_result = self.eval_expr(left)?;
-        let right_result = self.eval_expr(right)?;
+    fn visit_binary(
+        &mut self,
+        left: &Expr,
+        operator: &Spanned<BinaryOp>,
+        right: &Expr,
+    ) -> Self::Output {
+        let l_val = self.eval_expr(left)?;
+        let r_val = self.eval_expr(right)?;
 
-        match (&operator.kind, left_result, right_result) {
+        match (&operator.value, l_val, r_val) {
             // arithmetic
-            (TokenKind::Slash, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l / r)),
-            (TokenKind::Star, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l * r)),
-            (TokenKind::Minus, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l - r)),
-            (TokenKind::Plus, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
+            (BinaryOp::Div, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l / r)),
+            (BinaryOp::Mul, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l * r)),
+            (BinaryOp::Sub, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l - r)),
+            (BinaryOp::Add, Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
 
             // string concatenation
-            (TokenKind::Plus, Value::String(l), r) => Ok(Value::String(l + &r.to_string())),
-            (TokenKind::Plus, l, Value::String(r)) => Ok(Value::String(l.to_string() + &r)),
+            (BinaryOp::Add, Value::String(l), r) => Ok(Value::String(l + &r.to_string())),
+            (BinaryOp::Add, l, Value::String(r)) => Ok(Value::String(l.to_string() + &r)),
 
             // comparison
-            (TokenKind::Greater, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l > r)),
-            (TokenKind::GreaterEqual, Value::Number(l), Value::Number(r)) => {
-                Ok(Value::Bool(l >= r))
-            }
-            (TokenKind::Less, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l < r)),
-            (TokenKind::LessEqual, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l <= r)),
+            (BinaryOp::Greater, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l > r)),
+            (BinaryOp::GreaterEqual, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l >= r)),
+            (BinaryOp::Less, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l < r)),
+            (BinaryOp::LessEqual, Value::Number(l), Value::Number(r)) => Ok(Value::Bool(l <= r)),
 
             // equality - number
-            (TokenKind::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
-            (TokenKind::BangEqual, l, r) => Ok(Value::Bool(l != r)),
+            (BinaryOp::EqualEqual, l, r) => Ok(Value::Bool(l == r)),
+            (BinaryOp::BangEqual, l, r) => Ok(Value::Bool(l != r)),
 
             _ => Err(RuntimeError {
                 kind: RuntimeKind::InvalidOperation,
@@ -284,9 +290,14 @@ impl ExprVisitor for Interpreter {
         Ok(result)
     }
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Self::Output {
-        match operator.kind {
-            TokenKind::And => {
+    fn visit_logical(
+        &mut self,
+        left: &Expr,
+        operator: &Spanned<LogicalOp>,
+        right: &Expr,
+    ) -> Self::Output {
+        match operator.value {
+            LogicalOp::And => {
                 let left_result = self.eval_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
@@ -295,7 +306,7 @@ impl ExprVisitor for Interpreter {
                     true => self.eval_expr(right),
                 }
             }
-            TokenKind::Or => {
+            LogicalOp::Or => {
                 let left_result = self.eval_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
@@ -304,9 +315,6 @@ impl ExprVisitor for Interpreter {
                     false => self.eval_expr(right),
                 }
             }
-            _ => Err(RuntimeError {
-                kind: RuntimeKind::InvalidOperation,
-            }),
         }
     }
 

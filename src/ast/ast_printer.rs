@@ -1,5 +1,5 @@
-use super::{Expr, ExprVisitor, Stmt, StmtVisitor};
-use crate::frontend::Token;
+use super::{BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, UnaryOp};
+use crate::{common::Spanned, frontend::Token};
 
 #[derive(Debug, Default)]
 pub struct AstPrinter {}
@@ -33,14 +33,14 @@ impl ExprVisitor for AstPrinter {
         format!("(group {})", expr.kind.accept(self))
     }
 
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> String {
-        format!("({} {})", operator.lexeme, right.kind.accept(self))
+    fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> String {
+        format!("({} {})", operator.value, right.kind.accept(self))
     }
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_binary(&mut self, left: &Expr, operator: &Spanned<BinaryOp>, right: &Expr) -> String {
         format!(
             "({} {} {})",
-            operator.lexeme,
+            operator.value,
             left.kind.accept(self),
             right.kind.accept(self)
         )
@@ -54,10 +54,10 @@ impl ExprVisitor for AstPrinter {
         format!("(= {} {})", name.lexeme, value.kind.accept(self))
     }
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_logical(&mut self, left: &Expr, operator: &Spanned<LogicalOp>, right: &Expr) -> String {
         format!(
             "({} {} {})",
-            operator.lexeme,
+            operator.value,
             left.kind.accept(self),
             right.kind.accept(self)
         )
