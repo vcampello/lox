@@ -16,16 +16,16 @@ impl Stmt {
         }
     }
 
-    pub fn continue_stmt(at: Span) -> Self {
+    pub fn continue_stmt(span: Span) -> Self {
         Self {
-            span: at,
+            span,
             kind: StmtKind::Continue,
         }
     }
 
-    pub fn break_stmt(at: Span) -> Self {
+    pub fn break_stmt(span: Span) -> Self {
         Self {
-            span: at,
+            span,
             kind: StmtKind::Break,
         }
     }
@@ -129,7 +129,6 @@ impl Stmt {
 #[derive(Debug, Clone)]
 pub enum StmtKind {
     Block(Vec<Stmt>),
-    // FIXME: rename to ExprStmt
     ExprStmt(Expr),
     Print(Expr),
     Variable {
@@ -208,10 +207,7 @@ pub fn walk_stmt<V: StmtVisitor>(stmt: &StmtKind, visitor: &mut V) -> V::Output 
         StmtKind::Block(stmts) => visitor.visit_block(stmts),
         StmtKind::ExprStmt(expr) => visitor.visit_expression(expr),
         StmtKind::Print(expr) => visitor.visit_print(expr),
-        StmtKind::Variable {
-            var: name,
-            initializer,
-        } => visitor.visit_variable(name, initializer),
+        StmtKind::Variable { var, initializer } => visitor.visit_variable(var, initializer),
         StmtKind::Conditional {
             condition,
             when_true,

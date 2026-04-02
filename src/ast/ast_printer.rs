@@ -54,7 +54,12 @@ impl ExprVisitor for AstPrinter {
         format!("(= {} {})", name.lexeme, value.kind.accept(self))
     }
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Spanned<LogicalOp>, right: &Expr) -> String {
+    fn visit_logical(
+        &mut self,
+        left: &Expr,
+        operator: &Spanned<LogicalOp>,
+        right: &Expr,
+    ) -> String {
         format!(
             "({} {} {})",
             operator.value,

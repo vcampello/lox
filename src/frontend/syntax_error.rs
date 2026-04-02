@@ -6,14 +6,13 @@ use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
+#[error("Syntax error")]
 pub enum SyntaxError {
-    // pass through error and diagnostics
-    #[error(transparent)]
+    // pass through diagnostics
     #[diagnostic(transparent)]
     Scanner(#[from] ScannerError),
 
-    // pass through error and diagnostics
-    #[error(transparent)]
+    // pass through diagnostics
     #[diagnostic(transparent)]
     Parser(#[from] ParserError),
 }
@@ -29,9 +28,10 @@ pub struct ScannerError {
 
 #[derive(Error, Debug, Clone)]
 pub enum ScannerErrorKind {
-    #[error("unterminated string")]
+    #[error("Unterminated string")]
     UnterminatedString,
-    #[error("unexpected character '{0}'")]
+
+    #[error("Unexpected character {0}")]
     UnexpectedCharacter(char),
 }
 

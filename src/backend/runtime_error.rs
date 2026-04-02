@@ -1,29 +1,61 @@
-use miette::Diagnostic;
+// Allow unused assignments - required by miette::Diagnostic derive macro
+#![allow(unused_assignments)]
+
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
+
+use crate::common::Span;
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("Runtime error")]
 pub struct RuntimeError {
-    pub kind: RuntimeKind,
-    // FIXME: Expr and Stmts need to carry a span first for this to make sense
-    // #[label("{kind}")]
-    // pub at: SourceSpan,
+    pub kind: RuntimeErrorKind,
+
+    #[label("{kind}")]
+    pub span: SourceSpan,
+}
+
+impl RuntimeError {
+    pub fn invalid_op(operation: String, span: Span) -> Self {
+        Self {
+            kind: RuntimeErrorKind::InvalidOperation { operation },
+            span: span.into(),
+        }
+    }
+
+    pub fn undefined_var(name: String, span: Span) -> Self {
+        Self {
+            kind: RuntimeErrorKind::UndefinedVariable { name },
+            span: span.into(),
+        }
+    }
+
+    pub fn continue_signal(span: Span) -> Self {
+        Self {
+            kind: RuntimeErrorKind::Continue,
+            span: span.into(),
+        }
+    }
+
+    pub fn break_signal(span: Span) -> Self {
+        Self {
+            kind: RuntimeErrorKind::Break,
+            span: span.into(),
+        }
+    }
 }
 
 #[derive(Error, Debug, Diagnostic)]
-pub enum RuntimeKind {
-    #[error("Invalid operation")]
-    InvalidOperation,
+pub enum RuntimeErrorKind {
+    #[error("Invalid {operation} operation")]
+    InvalidOperation { operation: String },
 
-    #[error("Invalid arithmetic operation")]
-    InvalidArithmeticOperation,
+    #[error("Undefined variable '{name}'")]
+    UndefinedVariable { name: String },
 
     #[error("Continue")]
     Continue,
 
     #[error("Break")]
     Break,
-
-    #[error("Undefined variable '{name}'")]
-    UndefinedVariable { name: String },
 }

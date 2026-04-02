@@ -6,13 +6,12 @@ use miette::Diagnostic;
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("transparent")]
 pub enum LoxError {
-    #[error("Syntax error")]
+    #[error(transparent)]
     #[diagnostic(transparent)]
     Syntax(#[from] SyntaxError),
 
-    #[error("Runtime error")]
+    #[error(transparent)]
     #[diagnostic(transparent)]
     Runtime(#[from] RuntimeError),
 }
