@@ -100,7 +100,7 @@ impl<'a> Scanner<'a> {
                 (char, _) => {
                     return Err(ScannerError {
                         kind: ScannerErrorKind::UnexpectedCharacter(char),
-                        at: self.to_offset_all().into(),
+                        span: self.to_offset_all().into(),
                     });
                 }
             };
@@ -200,7 +200,7 @@ impl<'a> Scanner<'a> {
         if self.chars.peek().is_none() {
             return Err(ScannerError {
                 kind: ScannerErrorKind::UnterminatedString,
-                at: self.to_offset().into(),
+                span: self.to_offset().into(),
             });
         }
 

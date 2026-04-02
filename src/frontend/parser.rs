@@ -97,7 +97,7 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.match_tokens(&[TokenKind::Or]) {
             let operator = LogicalOp::try_from(token.kind).map_err(|kind| ParserError {
-                at: token.span.into(),
+                span: token.span.into(),
                 kind,
             })?;
             let right = self.or()?;
@@ -113,7 +113,7 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.match_tokens(&[TokenKind::And]) {
             let operator = LogicalOp::try_from(token.kind).map_err(|kind| ParserError {
-                at: token.span.into(),
+                span: token.span.into(),
                 kind,
             })?;
             let right = self.equality()?;
@@ -141,7 +141,7 @@ impl<'a> Parser<'a> {
                     kind: ParserErrorKind::InvalidAssignmentTarget {
                         token_kind: equals.kind,
                     },
-                    at: equals.span.into(),
+                    span: equals.span.into(),
                 }),
             };
         }
@@ -155,7 +155,7 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.match_tokens(&[TokenKind::EqualEqual, TokenKind::BangEqual]) {
             let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
-                at: token.span.into(),
+                span: token.span.into(),
                 kind,
             })?;
             let right = self.comparison()?;
@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
             TokenKind::LessEqual,
         ]) {
             let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
-                at: token.span.into(),
+                span: token.span.into(),
                 kind,
             })?;
             let right = self.term()?;
@@ -192,7 +192,7 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.match_tokens(&[TokenKind::Minus, TokenKind::Plus]) {
             let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
-                at: token.span.into(),
+                span: token.span.into(),
                 kind,
             })?;
             let right = self.factor()?;
@@ -208,7 +208,7 @@ impl<'a> Parser<'a> {
 
         while let Some(token) = self.match_tokens(&[TokenKind::Slash, TokenKind::Star]) {
             let operator = BinaryOp::try_from(token.kind).map_err(|kind| ParserError {
-                at: token.span.into(),
+                span: token.span.into(),
                 kind,
             })?;
             let right = self.unary()?;
@@ -223,7 +223,7 @@ impl<'a> Parser<'a> {
         match self.match_tokens(&[TokenKind::Bang, TokenKind::Minus]) {
             Some(token) => {
                 let operator = UnaryOp::try_from(token.kind).map_err(|kind| ParserError {
-                    at: token.span.into(),
+                    span: token.span.into(),
                     kind,
                 })?;
                 let right = self.unary()?;
@@ -240,7 +240,7 @@ impl<'a> Parser<'a> {
         let last_span = self.last_span.offset;
 
         let token = self.advance().ok_or(ParserError {
-            at: last_span.into(),
+            span: last_span.into(),
             kind: ParserErrorKind::ExpectedExpression,
         })?;
 
@@ -255,7 +255,7 @@ impl<'a> Parser<'a> {
                     kind: ParserErrorKind::InvalidNumber {
                         lexeme: token.lexeme.clone(),
                     },
-                    at: token.span.into(),
+                    span: token.span.into(),
                 })
                 .map(|v| Expr::number_literal(v, token.span)),
             TokenKind::String => {
@@ -278,7 +278,7 @@ impl<'a> Parser<'a> {
 
             _ => Err(ParserError {
                 kind: ParserErrorKind::ExpectedExpression,
-                at: self.last_span.offset.into(),
+                span: self.last_span.offset.into(),
             }),
         }
     }
@@ -306,14 +306,14 @@ impl<'a> Parser<'a> {
         match self.advance() {
             Some(token) if token.kind == token_type => Ok(token),
             Some(token) => Err(ParserError {
-                at: token.span.offset.into(),
+                span: token.span.offset.into(),
                 kind: ParserErrorKind::ExpectedToken {
                     token_kind: token.kind,
                     message,
                 },
             }),
             None => Err(ParserError {
-                at: last_span.into(),
+                span: last_span.into(),
                 kind: ParserErrorKind::UnexpectedEof { message },
             }),
         }

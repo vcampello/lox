@@ -23,7 +23,7 @@ pub struct ScannerError {
     pub kind: ScannerErrorKind,
 
     #[label("{kind}")]
-    pub at: SourceSpan,
+    pub span: SourceSpan,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -42,7 +42,7 @@ pub struct ParserError {
     pub kind: ParserErrorKind,
 
     #[label("{kind}")]
-    pub at: SourceSpan,
+    pub span: SourceSpan,
 }
 
 #[derive(Error, Debug)]
