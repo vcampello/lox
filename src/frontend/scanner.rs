@@ -1,8 +1,5 @@
 use crate::ast::{Token, TokenKind};
-use crate::{
-    common::Span,
-    frontend::{ScannerError, ScannerErrorKind},
-};
+use crate::{common::Span, frontend::ScannerError};
 use std::{iter::Peekable, str::Chars};
 
 pub type ScannerResult<T> = Result<T, ScannerError>;
@@ -94,14 +91,11 @@ impl<'a> Scanner<'a> {
 
                 // literals
                 ('"', _) => self.handle_string()?,
-                (char, _) if char.is_ascii_digit() => self.handle_number(),
-                (char, _) if Scanner::is_identifier(&char) => self.handle_identifier_and_keywords(),
+                (ch, _) if ch.is_ascii_digit() => self.handle_number(),
+                (ch, _) if Scanner::is_identifier(&ch) => self.handle_identifier_and_keywords(),
 
-                (char, _) => {
-                    return Err(ScannerError {
-                        kind: ScannerErrorKind::UnexpectedCharacter(char),
-                        span: self.to_offset_all().into(),
-                    });
+                (ch, _) => {
+                    return Err(ScannerError::unexpected_character(ch, self.to_span_all()));
                 }
             };
 
@@ -114,26 +108,22 @@ impl<'a> Scanner<'a> {
         Ok(&self.tokens)
     }
 
-    fn to_span(&self) -> Span {
-        let offset = self.to_offset_all();
+    fn to_span_all(&self) -> Span {
         Span {
             line: self.line,
             col: self.col,
-            offset: offset.0,
-            length: offset.1,
+            offset: self.start,
+            length: self.current - self.start,
         }
     }
 
-    /// FIXME: rename this aka what does each tuple value actually mean?
-    /// Capture the entire source code for Errors
-    fn to_offset_all(&self) -> (usize, usize) {
-        (self.start, self.current - self.start)
-    }
-
-    /// FIXME: rename this aka what does each tuple value actually mean?
-    /// Capture only the current source code offset for Errors
-    fn to_offset(&self) -> (usize, usize) {
-        (self.current.saturating_sub(1), 1)
+    fn to_span_single(&self) -> Span {
+        Span {
+            line: self.line,
+            col: self.col,
+            offset: self.current.saturating_sub(1),
+            length: 1,
+        }
     }
 
     fn increase_line(&mut self) {
@@ -143,7 +133,7 @@ impl<'a> Scanner<'a> {
 
     fn add_token(&mut self, token_type: TokenKind) {
         let lexeme = &self.source[self.start..self.current];
-        let token = Token::new(token_type, lexeme.to_string(), self.to_span());
+        let token = Token::new(token_type, lexeme.to_string(), self.to_span_all());
         self.tokens.push(token);
     }
 
@@ -198,10 +188,7 @@ impl<'a> Scanner<'a> {
         }
 
         if self.chars.peek().is_none() {
-            return Err(ScannerError {
-                kind: ScannerErrorKind::UnterminatedString,
-                span: self.to_offset().into(),
-            });
+            return Err(ScannerError::unterminated_string(self.to_span_single()));
         }
 
         // consume closing "

@@ -11,7 +11,7 @@ pub enum LoxError {
     #[diagnostic(transparent)]
     Syntax(#[from] SyntaxError),
 
-    #[error(transparent)]
+    #[error("Runtime error")]
     #[diagnostic(transparent)]
     Runtime(#[from] RuntimeError),
 }

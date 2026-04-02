@@ -1,7 +1,7 @@
 // Allow unused assignments - required by miette::Diagnostic derive macro
 #![allow(unused_assignments)]
 
-use crate::ast::TokenKind;
+use crate::{ast::TokenKind, common::Span};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -18,12 +18,28 @@ pub enum SyntaxError {
 }
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("Scanner error")]
+#[error("{kind}")]
 pub struct ScannerError {
     pub kind: ScannerErrorKind,
 
     #[label("{kind}")]
     pub span: SourceSpan,
+}
+
+impl ScannerError {
+    pub fn unterminated_string(span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ScannerErrorKind::UnterminatedString,
+        }
+    }
+
+    pub fn unexpected_character(ch: char, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ScannerErrorKind::UnexpectedCharacter(ch),
+        }
+    }
 }
 
 #[derive(Error, Debug, Clone)]
@@ -35,14 +51,63 @@ pub enum ScannerErrorKind {
     UnexpectedCharacter(char),
 }
 
-// TODO: add factory methods
 #[derive(Error, Debug, Diagnostic)]
-#[error("Parser error")]
+#[error("{kind}")]
 pub struct ParserError {
     pub kind: ParserErrorKind,
 
     #[label("{kind}")]
     pub span: SourceSpan,
+}
+
+impl ParserError {
+    pub fn expected_token(message: &'static str, token_kind: TokenKind, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::ExpectedToken {
+                token_kind,
+                message,
+            },
+        }
+    }
+
+    pub fn unexpected_eof(message: &'static str, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::UnexpectedEof { message },
+        }
+    }
+
+    pub fn expected_expression(span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::ExpectedExpression,
+        }
+    }
+
+    pub fn invalid_number(lexeme: String, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::InvalidNumber { lexeme },
+        }
+    }
+
+    pub fn invalid_assignment_target(token_kind: TokenKind, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::InvalidAssignmentTarget { token_kind },
+        }
+    }
+
+    pub fn invalid_operator(operation: &'static str, token_kind: TokenKind, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::InvalidOperator {
+                operation,
+                token_kind,
+            },
+        }
+    }
 }
 
 #[derive(Error, Debug)]

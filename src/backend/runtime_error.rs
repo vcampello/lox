@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::common::Span;
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("Runtime error")]
+#[error("{kind}")]
 pub struct RuntimeError {
     pub kind: RuntimeErrorKind,
 

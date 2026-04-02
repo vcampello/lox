@@ -1,4 +1,4 @@
-use super::{ParserError, ParserErrorKind};
+use super::ParserError;
 use crate::{
     ast::{BinaryOp, Expr, ExprKind, LogicalOp, Stmt, Token, TokenKind, UnaryOp},
     common::{Span, Spanned},
@@ -137,12 +137,10 @@ impl<'a> Parser<'a> {
 
             return match expr.kind {
                 ExprKind::Variable { var: name } => Ok(Expr::assignment(name, value)),
-                _ => Err(ParserError {
-                    kind: ParserErrorKind::InvalidAssignmentTarget {
-                        token_kind: equals.kind,
-                    },
-                    span: equals.span.into(),
-                }),
+                _ => Err(ParserError::invalid_assignment_target(
+                    equals.kind,
+                    equals.span,
+                )),
             };
         }
 
@@ -237,12 +235,11 @@ impl<'a> Parser<'a> {
     /// primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
     fn primary(&mut self) -> ParserResult<Expr> {
         // in case there's no token
-        let last_span = self.last_span.offset;
+        let last_span = self.last_span;
 
-        let token = self.advance().ok_or(ParserError {
-            span: last_span.into(),
-            kind: ParserErrorKind::ExpectedExpression,
-        })?;
+        let token = self
+            .advance()
+            .ok_or(ParserError::expected_expression(last_span))?;
 
         match &token.kind {
             TokenKind::True => Ok(Expr::bool_literal(true, token.span)),
@@ -251,12 +248,7 @@ impl<'a> Parser<'a> {
             TokenKind::Number => token
                 .lexeme
                 .parse::<f64>()
-                .map_err(|_| ParserError {
-                    kind: ParserErrorKind::InvalidNumber {
-                        lexeme: token.lexeme.clone(),
-                    },
-                    span: token.span.into(),
-                })
+                .map_err(|_| ParserError::invalid_number(token.lexeme.clone(), token.span))
                 .map(|v| Expr::number_literal(v, token.span)),
             TokenKind::String => {
                 // String lexeme includes quotes, strip them
@@ -276,10 +268,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Identifier => Ok(Expr::variable(token.clone(), token.span)),
 
-            _ => Err(ParserError {
-                kind: ParserErrorKind::ExpectedExpression,
-                span: self.last_span.offset.into(),
-            }),
+            _ => Err(ParserError::expected_expression(self.last_span)),
         }
     }
 
@@ -299,23 +288,14 @@ impl<'a> Parser<'a> {
         Ok(Stmt::conditional_stmt(condition, when_true, when_false))
     }
 
-    fn consume(&mut self, token_type: TokenKind, message: &'static str) -> ParserResult<&Token> {
+    fn consume(&mut self, token_kind: TokenKind, message: &'static str) -> ParserResult<&Token> {
         // in case there's no token
-        let last_span = self.last_span.offset;
+        let last_span = self.last_span;
 
         match self.advance() {
-            Some(token) if token.kind == token_type => Ok(token),
-            Some(token) => Err(ParserError {
-                span: token.span.offset.into(),
-                kind: ParserErrorKind::ExpectedToken {
-                    token_kind: token.kind,
-                    message,
-                },
-            }),
-            None => Err(ParserError {
-                span: last_span.into(),
-                kind: ParserErrorKind::UnexpectedEof { message },
-            }),
+            Some(token) if token.kind == token_kind => Ok(token),
+            Some(token) => Err(ParserError::expected_token(message, token_kind, token.span)),
+            None => Err(ParserError::unexpected_eof(message, last_span)),
         }
     }
 
