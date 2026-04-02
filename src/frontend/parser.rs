@@ -1,10 +1,9 @@
-use std::{iter::Peekable, slice::Iter};
-
-use super::{ParserError, ParserErrorKind, Token, TokenKind};
+use super::{ParserError, ParserErrorKind};
 use crate::{
-    ast::{BinaryOp, Expr, ExprKind, LogicalOp, Stmt, UnaryOp},
+    ast::{BinaryOp, Expr, ExprKind, LogicalOp, Stmt, Token, TokenKind, UnaryOp},
     common::{Span, Spanned},
 };
+use std::{iter::Peekable, slice::Iter};
 
 pub type ParserResult<T> = Result<T, ParserError>;
 

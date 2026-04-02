@@ -1,6 +1,6 @@
+use super::Token;
 use crate::ast::{AstPrinter, Expr};
 use crate::common::Span;
-use crate::frontend::Token;
 
 #[derive(Debug, Clone)]
 pub struct Stmt {

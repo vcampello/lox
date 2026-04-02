@@ -1,7 +1,8 @@
+use super::{Token, TokenKind};
 use crate::{
     ast::AstPrinter,
     common::{Span, Spanned},
-    frontend::{ParserErrorKind, Token, TokenKind},
+    frontend::ParserErrorKind,
 };
 
 #[derive(Debug, Clone)]
@@ -319,11 +320,7 @@ pub fn walk_expr<V: ExprVisitor>(expr: &ExprKind, visitor: &mut V) -> V::Output 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        ast::AstPrinter,
-        common::Span,
-        frontend::{Token, TokenKind},
-    };
+    use crate::{ast::AstPrinter, common::Span};
 
     #[test]
     fn unary() {

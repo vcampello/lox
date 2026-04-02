@@ -1,10 +1,10 @@
 use super::*;
 use crate::{
     ast::{
-        BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, UnaryOp, walk_expr, walk_stmt,
+        BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, Token, UnaryOp, walk_expr,
+        walk_stmt,
     },
     common::{Span, Spanned},
-    frontend::Token,
 };
 
 pub type InterpreterResult<T> = Result<T, RuntimeError>;

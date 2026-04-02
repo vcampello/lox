@@ -1,7 +1,6 @@
-use std::fmt;
-
 use super::TokenKind;
 use crate::common::Span;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Token {

@@ -1,5 +1,5 @@
-use super::{BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, UnaryOp};
-use crate::{common::Spanned, frontend::Token};
+use super::{BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, Token, UnaryOp};
+use crate::common::Spanned;
 
 #[derive(Debug, Default)]
 pub struct AstPrinter {}

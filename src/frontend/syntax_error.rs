@@ -1,7 +1,7 @@
 // Allow unused assignments - required by miette::Diagnostic derive macro
 #![allow(unused_assignments)]
 
-use super::TokenKind;
+use crate::ast::TokenKind;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 

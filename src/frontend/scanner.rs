@@ -1,4 +1,4 @@
-use super::{Token, TokenKind};
+use crate::ast::{Token, TokenKind};
 use crate::{
     common::Span,
     frontend::{ScannerError, ScannerErrorKind},
