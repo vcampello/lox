@@ -1,9 +1,6 @@
 use super::*;
 use crate::{
-    ast::{
-        BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, Token, UnaryOp, walk_expr,
-        walk_stmt,
-    },
+    ast::{BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, Token, UnaryOp},
     common::{Span, Spanned},
 };
 
@@ -32,16 +29,6 @@ impl Interpreter {
         }
 
         Ok(())
-    }
-
-    /// Defines the statement evaluation algorithm
-    fn eval_stmt(&mut self, stmt: &Stmt) -> InterpreterResult<()> {
-        walk_stmt(&stmt.kind, self)
-    }
-
-    /// Defines the expression evaluation algorithm
-    fn eval_expr(&mut self, expr: &Expr) -> InterpreterResult<Value> {
-        walk_expr(&expr.kind, self)
     }
 }
 

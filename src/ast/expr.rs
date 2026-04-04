@@ -262,6 +262,14 @@ impl ExprKind {
 pub trait ExprVisitor {
     type Output;
 
+    /// Defines the expression evaluation algorithm
+    fn eval_expr(&mut self, expr: &Expr) -> Self::Output
+    where
+        Self: Sized,
+    {
+        walk_expr(&expr.kind, self)
+    }
+
     fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> Self::Output;
 
     fn visit_binary(

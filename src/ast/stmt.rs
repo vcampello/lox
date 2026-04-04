@@ -171,6 +171,14 @@ impl std::fmt::Display for StmtKind {
 pub trait StmtVisitor {
     type Output;
 
+    /// Defines the default statement evaluation algorithm
+    fn eval_stmt(&mut self, stmt: &Stmt) -> Self::Output
+    where
+        Self: Sized,
+    {
+        walk_stmt(&stmt.kind, self)
+    }
+
     fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output;
 
     fn visit_expression(&mut self, expr: &Expr) -> Self::Output;
