@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use super::Token;
 use crate::ast::{AstPrinter, Expr};
 use crate::common::Span;
@@ -122,6 +124,14 @@ impl Stmt {
                 body: Box::new(body),
             },
         }
+    }
+}
+
+impl Deref for Stmt {
+    type Target = StmtKind;
+
+    fn deref(&self) -> &Self::Target {
+        &self.kind
     }
 }
 

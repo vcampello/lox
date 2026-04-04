@@ -30,19 +30,19 @@ impl ExprVisitor for AstPrinter {
     }
 
     fn visit_grouping(&mut self, expr: &Expr) -> String {
-        format!("(group {})", expr.kind.visit(self))
+        format!("(group {})", expr.visit(self))
     }
 
     fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> String {
-        format!("({} {})", operator.value, right.kind.visit(self))
+        format!("({} {})", operator.value, right.visit(self))
     }
 
     fn visit_binary(&mut self, left: &Expr, operator: &Spanned<BinaryOp>, right: &Expr) -> String {
         format!(
             "({} {} {})",
             operator.value,
-            left.kind.visit(self),
-            right.kind.visit(self)
+            left.visit(self),
+            right.visit(self)
         )
     }
 
@@ -51,7 +51,7 @@ impl ExprVisitor for AstPrinter {
     }
 
     fn visit_assignment(&mut self, name: &Token, value: &Expr) -> String {
-        format!("(= {} {})", name.lexeme, value.kind.visit(self))
+        format!("(= {} {})", name.lexeme, value.visit(self))
     }
 
     fn visit_logical(
@@ -63,8 +63,8 @@ impl ExprVisitor for AstPrinter {
         format!(
             "({} {} {})",
             operator.value,
-            left.kind.visit(self),
-            right.kind.visit(self)
+            left.visit(self),
+            right.visit(self)
         )
     }
 }
@@ -75,23 +75,23 @@ impl StmtVisitor for AstPrinter {
     fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output {
         let body = stmts
             .iter()
-            .map(|stmt| stmt.kind.visit(self))
+            .map(|stmt| stmt.visit(self))
             .collect::<Vec<_>>()
             .join(" ");
         format!("(block {})", body)
     }
 
     fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
-        expr.kind.visit(self)
+        expr.visit(self)
     }
 
     fn visit_print(&mut self, expr: &Expr) -> Self::Output {
-        format!("(print {})", expr.kind.visit(self))
+        format!("(print {})", expr.visit(self))
     }
 
     fn visit_variable(&mut self, var: &Token, initializer: &Option<Expr>) -> Self::Output {
         match initializer {
-            Some(expr) => format!("(var {} = {})", var.lexeme, expr.kind.visit(self)),
+            Some(expr) => format!("(var {} = {})", var.lexeme, expr.visit(self)),
             None => format!("(var {})", var.lexeme),
         }
     }
@@ -102,19 +102,19 @@ impl StmtVisitor for AstPrinter {
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
-        let cond = condition.kind.visit(self);
-        let true_result = when_true.kind.visit(self);
+        let cond = condition.visit(self);
+        let true_result = when_true.visit(self);
 
-        match when_false.as_ref().map(|stmt| stmt.kind.visit(self)) {
+        match when_false.as_ref().map(|stmt| stmt.visit(self)) {
             Some(false_result) => format!("(if {} {} {})", cond, true_result, false_result),
             None => format!("(if {} {})", cond, true_result),
         }
     }
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
-        let cond = condition.kind.visit(self);
+        let cond = condition.visit(self);
 
-        format!("(while {} {})", cond, body.kind.visit(self))
+        format!("(while {} {})", cond, body.visit(self))
     }
 
     fn visit_continue(&mut self) -> Self::Output {
@@ -134,25 +134,19 @@ impl StmtVisitor for AstPrinter {
     ) -> Self::Output {
         let init = initializer
             .as_ref()
-            .map(|stmt| stmt.kind.visit(self))
+            .map(|stmt| stmt.visit(self))
             .unwrap_or("_".to_string());
 
         let cond = condition
             .as_ref()
-            .map(|expr| expr.kind.visit(self))
+            .map(|expr| expr.visit(self))
             .unwrap_or("_".to_string());
 
         let inc = increment
             .as_ref()
-            .map(|expr| expr.kind.visit(self))
+            .map(|expr| expr.visit(self))
             .unwrap_or("_".to_string());
 
-        format!(
-            "(for {}; {}; {}; {})",
-            init,
-            cond,
-            inc,
-            body.kind.visit(self)
-        )
+        format!("(for {}; {}; {}; {})", init, cond, inc, body.visit(self))
     }
 }

@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use super::{Token, TokenKind};
 use crate::{
     ast::AstPrinter,
@@ -214,6 +216,14 @@ impl TryFrom<TokenKind> for LogicalOp {
     }
 }
 
+impl Deref for Expr {
+    type Target = ExprKind;
+
+    fn deref(&self) -> &Self::Target {
+        &self.kind
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ExprKind {
     Unary {
@@ -337,7 +347,7 @@ mod tests {
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::unary(Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
-        let result = e.kind.visit(&mut printer);
+        let result = e.visit(&mut printer);
         assert_eq!(result, "(- 1)")
     }
 
@@ -348,7 +358,7 @@ mod tests {
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::binary(literal.clone(), Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
-        let result = e.kind.visit(&mut printer);
+        let result = e.visit(&mut printer);
         assert_eq!(result, "(- 1 1)")
     }
 
@@ -365,7 +375,7 @@ mod tests {
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::grouping(literal);
         let mut printer = AstPrinter::new();
-        let result = e.kind.visit(&mut printer);
+        let result = e.visit(&mut printer);
         assert_eq!(result, "(group 1)")
     }
 
@@ -383,7 +393,7 @@ mod tests {
 
         let e = Expr::binary(left, Spanned::new(op, op_tok.span), right);
         let mut printer = AstPrinter::new();
-        let result = e.kind.visit(&mut printer);
+        let result = e.visit(&mut printer);
         assert_eq!(result, "(* (- 123) (group 45.67))")
     }
 }
