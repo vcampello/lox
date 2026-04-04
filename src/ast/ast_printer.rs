@@ -30,19 +30,19 @@ impl ExprVisitor for AstPrinter {
     }
 
     fn visit_grouping(&mut self, expr: &Expr) -> String {
-        format!("(group {})", expr.kind.accept(self))
+        format!("(group {})", expr.kind.visit(self))
     }
 
     fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> String {
-        format!("({} {})", operator.value, right.kind.accept(self))
+        format!("({} {})", operator.value, right.kind.visit(self))
     }
 
     fn visit_binary(&mut self, left: &Expr, operator: &Spanned<BinaryOp>, right: &Expr) -> String {
         format!(
             "({} {} {})",
             operator.value,
-            left.kind.accept(self),
-            right.kind.accept(self)
+            left.kind.visit(self),
+            right.kind.visit(self)
         )
     }
 
@@ -51,7 +51,7 @@ impl ExprVisitor for AstPrinter {
     }
 
     fn visit_assignment(&mut self, name: &Token, value: &Expr) -> String {
-        format!("(= {} {})", name.lexeme, value.kind.accept(self))
+        format!("(= {} {})", name.lexeme, value.kind.visit(self))
     }
 
     fn visit_logical(
@@ -63,8 +63,8 @@ impl ExprVisitor for AstPrinter {
         format!(
             "({} {} {})",
             operator.value,
-            left.kind.accept(self),
-            right.kind.accept(self)
+            left.kind.visit(self),
+            right.kind.visit(self)
         )
     }
 }
@@ -75,23 +75,23 @@ impl StmtVisitor for AstPrinter {
     fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output {
         let body = stmts
             .iter()
-            .map(|stmt| stmt.kind.accept(self))
+            .map(|stmt| stmt.kind.visit(self))
             .collect::<Vec<_>>()
             .join(" ");
         format!("(block {})", body)
     }
 
     fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
-        expr.kind.accept(self)
+        expr.kind.visit(self)
     }
 
     fn visit_print(&mut self, expr: &Expr) -> Self::Output {
-        format!("(print {})", expr.kind.accept(self))
+        format!("(print {})", expr.kind.visit(self))
     }
 
     fn visit_variable(&mut self, var: &Token, initializer: &Option<Expr>) -> Self::Output {
         match initializer {
-            Some(expr) => format!("(var {} = {})", var.lexeme, expr.kind.accept(self)),
+            Some(expr) => format!("(var {} = {})", var.lexeme, expr.kind.visit(self)),
             None => format!("(var {})", var.lexeme),
         }
     }
@@ -102,19 +102,19 @@ impl StmtVisitor for AstPrinter {
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
-        let cond = condition.kind.accept(self);
-        let true_result = when_true.kind.accept(self);
+        let cond = condition.kind.visit(self);
+        let true_result = when_true.kind.visit(self);
 
-        match when_false.as_ref().map(|stmt| stmt.kind.accept(self)) {
+        match when_false.as_ref().map(|stmt| stmt.kind.visit(self)) {
             Some(false_result) => format!("(if {} {} {})", cond, true_result, false_result),
             None => format!("(if {} {})", cond, true_result),
         }
     }
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
-        let cond = condition.kind.accept(self);
+        let cond = condition.kind.visit(self);
 
-        format!("(while {} {})", cond, body.kind.accept(self))
+        format!("(while {} {})", cond, body.kind.visit(self))
     }
 
     fn visit_continue(&mut self) -> Self::Output {
@@ -134,17 +134,17 @@ impl StmtVisitor for AstPrinter {
     ) -> Self::Output {
         let init = initializer
             .as_ref()
-            .map(|stmt| stmt.kind.accept(self))
+            .map(|stmt| stmt.kind.visit(self))
             .unwrap_or("_".to_string());
 
         let cond = condition
             .as_ref()
-            .map(|expr| expr.kind.accept(self))
+            .map(|expr| expr.kind.visit(self))
             .unwrap_or("_".to_string());
 
         let inc = increment
             .as_ref()
-            .map(|expr| expr.kind.accept(self))
+            .map(|expr| expr.kind.visit(self))
             .unwrap_or("_".to_string());
 
         format!(
@@ -152,7 +152,7 @@ impl StmtVisitor for AstPrinter {
             init,
             cond,
             inc,
-            body.kind.accept(self)
+            body.kind.visit(self)
         )
     }
 }

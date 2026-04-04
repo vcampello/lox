@@ -25,7 +25,7 @@ impl Interpreter {
     pub fn interpret(&mut self, stmts: &[Stmt]) -> InterpreterResult<()> {
         for stmt in stmts.iter() {
             self.last_stmt_span = stmt.span;
-            self.eval_stmt(stmt)?;
+            self.visit_stmt(stmt)?;
         }
 
         Ok(())
@@ -47,19 +47,19 @@ impl StmtVisitor for Interpreter {
     }
 
     fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
-        self.eval_expr(expr)?;
+        self.visit_expr(expr)?;
         Ok(())
     }
 
     fn visit_print(&mut self, expr: &Expr) -> Self::Output {
-        let result = self.eval_expr(expr)?;
+        let result = self.visit_expr(expr)?;
         println!("{result}");
         Ok(())
     }
 
     fn visit_variable(&mut self, var: &Token, initializer: &Option<Expr>) -> Self::Output {
         let value = match initializer {
-            Some(expr) => self.eval_expr(expr)?,
+            Some(expr) => self.visit_expr(expr)?,
             None => Value::Nil,
         };
         self.env.define(&var.lexeme, &value);
@@ -72,12 +72,12 @@ impl StmtVisitor for Interpreter {
         when_true: &Stmt,
         when_false: &Option<Box<Stmt>>,
     ) -> Self::Output {
-        if self.eval_expr(condition)?.is_truthy() {
+        if self.visit_expr(condition)?.is_truthy() {
             // else cute if branch
-            self.eval_stmt(when_true)?;
+            self.visit_stmt(when_true)?;
         } else if let Some(stmt) = when_false {
             // execute else branch if defined
-            self.eval_stmt(stmt)?;
+            self.visit_stmt(stmt)?;
         }
 
         Ok(())
@@ -88,14 +88,14 @@ impl StmtVisitor for Interpreter {
         self.env.begin_scope();
 
         while self
-            .eval_expr(condition)
+            .visit_expr(condition)
             // clean up condition scope in case of failure
             .inspect_err(|_| self.env.end_scope())?
             .is_truthy()
         {
             // capture the body result
             self.env.begin_scope(); // capture while body scope
-            let body_result = self.eval_stmt(body);
+            let body_result = self.visit_stmt(body);
             self.env.end_scope(); // drop while body scope
 
             if let Err(e) = body_result {
@@ -136,7 +136,7 @@ impl StmtVisitor for Interpreter {
 
         // run the initializer once
         if let Some(initializer) = initializer {
-            self.eval_stmt(initializer).inspect_err(|_| {
+            self.visit_stmt(initializer).inspect_err(|_| {
                 // drop for loop condition variables
                 self.env.end_scope();
             })?;
@@ -144,7 +144,7 @@ impl StmtVisitor for Interpreter {
 
         while match condition {
             Some(expr) => self
-                .eval_expr(expr)
+                .visit_expr(expr)
                 // clean up condition scope in case of failure
                 .inspect_err(|_| self.env.end_scope())?
                 .is_truthy(),
@@ -152,7 +152,7 @@ impl StmtVisitor for Interpreter {
         } {
             // capture the body result
             self.env.begin_scope(); // capture while body scope
-            let body_result = self.eval_stmt(body);
+            let body_result = self.visit_stmt(body);
             self.env.end_scope(); // drop while body scope
 
             // run the increment expression for success & continue, but not break
@@ -164,7 +164,7 @@ impl StmtVisitor for Interpreter {
                         ..
                     })
                     | Ok(_) => {
-                        self.eval_expr(increment)
+                        self.visit_expr(increment)
                             // clean up body scope in case of failure
                             .inspect_err(|_| self.env.end_scope())?;
                     }
@@ -196,7 +196,7 @@ impl ExprVisitor for Interpreter {
     type Output = InterpreterResult<Value>;
 
     fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> Self::Output {
-        let right_result = self.eval_expr(right)?;
+        let right_result = self.visit_expr(right)?;
 
         match (&operator.value, right_result) {
             (UnaryOp::Neg, Value::Number(v)) => Ok(Value::Number(-v)),
@@ -214,8 +214,8 @@ impl ExprVisitor for Interpreter {
         operator: &Spanned<BinaryOp>,
         right: &Expr,
     ) -> Self::Output {
-        let l_val = self.eval_expr(left)?;
-        let r_val = self.eval_expr(right)?;
+        let l_val = self.visit_expr(left)?;
+        let r_val = self.visit_expr(right)?;
 
         match (&operator.value, l_val, r_val) {
             // arithmetic
@@ -246,7 +246,7 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_grouping(&mut self, expr: &Expr) -> Self::Output {
-        self.eval_expr(expr)
+        self.visit_expr(expr)
     }
 
     fn visit_variable(&mut self, name: &Token) -> Self::Output {
@@ -262,7 +262,7 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output {
-        let result = self.eval_expr(value)?;
+        let result = self.visit_expr(value)?;
         self.env
             .assign(&name.lexeme, &result)
             .map_err(|e| match e {
@@ -281,21 +281,21 @@ impl ExprVisitor for Interpreter {
     ) -> Self::Output {
         match operator.value {
             LogicalOp::And => {
-                let left_result = self.eval_expr(left)?;
+                let left_result = self.visit_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
                     false => Ok(left_result),
                     // keep chaining so long as it's true
-                    true => self.eval_expr(right),
+                    true => self.visit_expr(right),
                 }
             }
             LogicalOp::Or => {
-                let left_result = self.eval_expr(left)?;
+                let left_result = self.visit_expr(left)?;
                 match left_result.is_truthy() {
                     // short circuit
                     true => Ok(left_result),
                     // keep chaining
-                    false => self.eval_expr(right),
+                    false => self.visit_expr(right),
                 }
             }
         }

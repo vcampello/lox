@@ -249,12 +249,12 @@ pub enum ExprKind {
 impl std::fmt::Display for ExprKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut printer = AstPrinter::new();
-        write!(f, "{}", self.accept(&mut printer))
+        write!(f, "{}", self.visit(&mut printer))
     }
 }
 
 impl ExprKind {
-    pub fn accept<V: ExprVisitor>(&self, visitor: &mut V) -> V::Output {
+    pub fn visit<V: ExprVisitor>(&self, visitor: &mut V) -> V::Output {
         walk_expr(self, visitor)
     }
 }
@@ -263,7 +263,7 @@ pub trait ExprVisitor {
     type Output;
 
     /// Defines the expression evaluation algorithm
-    fn eval_expr(&mut self, expr: &Expr) -> Self::Output
+    fn visit_expr(&mut self, expr: &Expr) -> Self::Output
     where
         Self: Sized,
     {
@@ -337,7 +337,7 @@ mod tests {
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::unary(Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
-        let result = e.kind.accept(&mut printer);
+        let result = e.kind.visit(&mut printer);
         assert_eq!(result, "(- 1)")
     }
 
@@ -348,7 +348,7 @@ mod tests {
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::binary(literal.clone(), Spanned::new(op, operator.span), literal);
         let mut printer = AstPrinter::new();
-        let result = e.kind.accept(&mut printer);
+        let result = e.kind.visit(&mut printer);
         assert_eq!(result, "(- 1 1)")
     }
 
@@ -356,7 +356,7 @@ mod tests {
     fn literal() {
         let literal = ExprKind::NumberLiteral(1.0);
         let mut printer = AstPrinter::new();
-        let result = literal.accept(&mut printer);
+        let result = literal.visit(&mut printer);
         assert_eq!(result, "1")
     }
 
@@ -365,7 +365,7 @@ mod tests {
         let literal = Expr::number_literal(1.0, Span::default());
         let e = Expr::grouping(literal);
         let mut printer = AstPrinter::new();
-        let result = e.kind.accept(&mut printer);
+        let result = e.kind.visit(&mut printer);
         assert_eq!(result, "(group 1)")
     }
 
@@ -383,7 +383,7 @@ mod tests {
 
         let e = Expr::binary(left, Spanned::new(op, op_tok.span), right);
         let mut printer = AstPrinter::new();
-        let result = e.kind.accept(&mut printer);
+        let result = e.kind.visit(&mut printer);
         assert_eq!(result, "(* (- 123) (group 45.67))")
     }
 }

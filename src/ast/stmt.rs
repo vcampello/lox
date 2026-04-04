@@ -156,7 +156,7 @@ pub enum StmtKind {
 }
 
 impl StmtKind {
-    pub fn accept<V: StmtVisitor>(&self, visitor: &mut V) -> V::Output {
+    pub fn visit<V: StmtVisitor>(&self, visitor: &mut V) -> V::Output {
         walk_stmt(self, visitor)
     }
 }
@@ -164,7 +164,7 @@ impl StmtKind {
 impl std::fmt::Display for StmtKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut printer = AstPrinter::new();
-        write!(f, "{}", self.accept(&mut printer))
+        write!(f, "{}", self.visit(&mut printer))
     }
 }
 
@@ -172,7 +172,7 @@ pub trait StmtVisitor {
     type Output;
 
     /// Defines the default statement evaluation algorithm
-    fn eval_stmt(&mut self, stmt: &Stmt) -> Self::Output
+    fn visit_stmt(&mut self, stmt: &Stmt) -> Self::Output
     where
         Self: Sized,
     {
