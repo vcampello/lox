@@ -52,7 +52,7 @@ impl StmtVisitor for Interpreter {
             Some(expr) => self.visit_expr(expr)?,
             None => Value::Nil,
         };
-        self.env.define(&stmt.var.lexeme, &value);
+        self.env.define(&stmt.name, &value);
         Ok(())
     }
 

@@ -213,7 +213,7 @@ impl From<PrintStmt> for Stmt {
 #[derive(Debug, Clone)]
 pub struct VariableStmt {
     pub span: Span,
-    pub var: Token,
+    pub name: String,
     pub initializer: Option<Expr>,
 }
 
@@ -226,7 +226,7 @@ impl VariableStmt {
 
         Self {
             span,
-            var,
+            name: var.lexeme,
             initializer,
         }
     }

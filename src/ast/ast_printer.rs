@@ -86,8 +86,8 @@ impl StmtVisitor for AstPrinter {
 
     fn visit_variable(&mut self, stmt: &VariableStmt) -> Self::Output {
         match &stmt.initializer {
-            Some(expr) => format!("(var {} = {})", stmt.var.lexeme, expr.visit(self)),
-            None => format!("(var {})", stmt.var.lexeme),
+            Some(expr) => format!("(var {} = {})", stmt.name, expr.visit(self)),
+            None => format!("(var {})", stmt.name),
         }
     }
 
