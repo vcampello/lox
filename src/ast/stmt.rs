@@ -12,88 +12,35 @@ pub struct Stmt {
 
 impl Stmt {
     pub fn print_stmt(expr: Expr) -> Self {
-        Self {
-            span: expr.span,
-            kind: StmtKind::Print(expr),
-        }
+        PrintStmt::new(expr).into()
     }
 
     pub fn continue_stmt(span: Span) -> Self {
-        Self {
-            span,
-            kind: StmtKind::Continue,
-        }
+        ContinueStmt::new(span).into()
     }
 
     pub fn break_stmt(span: Span) -> Self {
-        Self {
-            span,
-            kind: StmtKind::Break,
-        }
+        BreakStmt::new(span).into()
     }
 
     pub fn expr_stmt(expr: Expr) -> Self {
-        Self {
-            span: expr.span,
-            kind: StmtKind::ExprStmt(expr),
-        }
+        ExprStmt::new(expr).into()
     }
 
     pub fn block_stmt(stmts: Vec<Stmt>, fallback_span: Span) -> Self {
-        let at = match stmts
-            .iter()
-            .map(|stmt| stmt.span)
-            .reduce(|acc, e| acc.merge(&e))
-        {
-            Some(combined_span) => combined_span,
-            None => fallback_span,
-        };
-
-        Self {
-            span: at,
-            kind: StmtKind::Block(stmts),
-        }
+        BlockStmt::new(stmts, fallback_span).into()
     }
 
     pub fn variable_stmt(var: Token, initializer: Option<Expr>) -> Self {
-        let at = match &initializer {
-            Some(expr) => var.span.merge(&expr.span),
-            None => var.span,
-        };
-
-        Self {
-            span: at,
-            kind: StmtKind::Variable { var, initializer },
-        }
+        VariableStmt::new(var, initializer).into()
     }
 
     pub fn conditional_stmt(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
-        let at = match &when_false {
-            Some(else_branch) => condition
-                .span
-                .merge(&when_true.span)
-                .merge(&else_branch.span),
-            None => condition.span.merge(&when_true.span),
-        };
-
-        Self {
-            span: at,
-            kind: StmtKind::Conditional {
-                condition,
-                when_true: Box::new(when_true),
-                when_false: when_false.map(Box::new),
-            },
-        }
+        ConditionalStmt::new(condition, when_true, when_false).into()
     }
 
     pub fn while_loop(condition: Expr, body: Stmt) -> Self {
-        Self {
-            span: condition.span.merge(&body.span),
-            kind: StmtKind::While {
-                condition,
-                body: Box::new(body),
-            },
-        }
+        WhileStmt::new(condition, body).into()
     }
 
     pub fn for_loop(
@@ -102,28 +49,7 @@ impl Stmt {
         increment: Option<Expr>,
         body: Stmt,
     ) -> Self {
-        let mut at = body.span;
-        if let Some(ref stmt) = initializer {
-            at = at.merge(&stmt.span)
-        }
-
-        if let Some(ref expr) = condition {
-            at = at.merge(&expr.span)
-        }
-
-        if let Some(ref expr) = increment {
-            at = at.merge(&expr.span)
-        }
-
-        Self {
-            span: at,
-            kind: StmtKind::For {
-                initializer: initializer.map(Box::new),
-                condition,
-                increment,
-                body: Box::new(body),
-            },
-        }
+        ForStmt::new(initializer, condition, increment, body).into()
     }
 }
 
@@ -135,34 +61,17 @@ impl Deref for Stmt {
     }
 }
 
-// TODO: implement Deref as kind
 #[derive(Debug, Clone)]
 pub enum StmtKind {
-    Block(Vec<Stmt>),
-    ExprStmt(Expr),
-    Print(Expr),
-    Variable {
-        // FIXME: why Token instead of something specific?
-        var: Token,
-        initializer: Option<Expr>,
-    },
-    Conditional {
-        condition: Expr,
-        when_true: Box<Stmt>,
-        when_false: Option<Box<Stmt>>,
-    },
-    While {
-        condition: Expr,
-        body: Box<Stmt>,
-    },
-    Continue,
-    Break,
-    For {
-        initializer: Option<Box<Stmt>>,
-        condition: Option<Expr>,
-        increment: Option<Expr>,
-        body: Box<Stmt>,
-    },
+    Block(BlockStmt),
+    ExprStmt(ExprStmt),
+    Print(PrintStmt),
+    Variable(VariableStmt),
+    Conditional(ConditionalStmt),
+    While(WhileStmt),
+    Continue(ContinueStmt),
+    Break(BreakStmt),
+    For(ForStmt),
 }
 
 impl StmtKind {
@@ -189,56 +98,296 @@ pub trait StmtVisitor {
         walk_stmt(&stmt.kind, self)
     }
 
-    fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output;
+    fn visit_block(&mut self, stmt: &BlockStmt) -> Self::Output;
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_expr_stmt(&mut self, stmt: &ExprStmt) -> Self::Output;
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output;
 
-    fn visit_variable(&mut self, var: &Token, initializer: &Option<Expr>) -> Self::Output;
+    fn visit_variable(&mut self, stmt: &VariableStmt) -> Self::Output;
 
-    fn visit_conditional(
-        &mut self,
-        condition: &Expr,
-        when_true: &Stmt,
-        when_false: &Option<Box<Stmt>>,
-    ) -> Self::Output;
+    fn visit_conditional(&mut self, stmt: &ConditionalStmt) -> Self::Output;
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output;
+    fn visit_while(&mut self, stmt: &WhileStmt) -> Self::Output;
 
-    fn visit_continue(&mut self) -> Self::Output;
+    fn visit_continue(&mut self, stmt: &ContinueStmt) -> Self::Output;
 
-    fn visit_break(&mut self) -> Self::Output;
+    fn visit_break(&mut self, stmt: &BreakStmt) -> Self::Output;
 
-    fn visit_for(
-        &mut self,
-        initializer: &Option<Box<Stmt>>,
-        condition: &Option<Expr>,
-        increment: &Option<Expr>,
-        body: &Stmt,
-    ) -> Self::Output;
+    fn visit_for(&mut self, stmt: &ForStmt) -> Self::Output;
 }
 
 /// Default walking algorithm for statements
 pub fn walk_stmt<V: StmtVisitor>(stmt: &StmtKind, visitor: &mut V) -> V::Output {
     match stmt {
-        StmtKind::Block(stmts) => visitor.visit_block(stmts),
-        StmtKind::ExprStmt(expr) => visitor.visit_expression(expr),
-        StmtKind::Print(expr) => visitor.visit_print(expr),
-        StmtKind::Variable { var, initializer } => visitor.visit_variable(var, initializer),
-        StmtKind::Conditional {
-            condition,
-            when_true,
-            when_false,
-        } => visitor.visit_conditional(condition, when_true, when_false),
-        StmtKind::While { condition, body } => visitor.visit_while(condition, body),
-        StmtKind::Continue => visitor.visit_continue(),
-        StmtKind::Break => visitor.visit_break(),
-        StmtKind::For {
+        StmtKind::Block(s) => visitor.visit_block(s),
+        StmtKind::ExprStmt(s) => visitor.visit_expr_stmt(s),
+        StmtKind::Print(s) => visitor.visit_print(s),
+        StmtKind::Variable(s) => visitor.visit_variable(s),
+        StmtKind::Conditional(s) => visitor.visit_conditional(s),
+        StmtKind::While(s) => visitor.visit_while(s),
+        StmtKind::Continue(s) => visitor.visit_continue(s),
+        StmtKind::Break(s) => visitor.visit_break(s),
+        StmtKind::For(s) => visitor.visit_for(s),
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockStmt {
+    pub span: Span,
+    pub stmts: Vec<Stmt>,
+}
+
+impl BlockStmt {
+    pub fn new(stmts: Vec<Stmt>, fallback_span: Span) -> Self {
+        let span = match stmts
+            .iter()
+            .map(|stmt| stmt.span)
+            .reduce(|acc, e| acc.merge(&e))
+        {
+            Some(combined_span) => combined_span,
+            None => fallback_span,
+        };
+
+        Self { span, stmts }
+    }
+}
+
+impl From<BlockStmt> for Stmt {
+    fn from(value: BlockStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Block(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExprStmt {
+    pub span: Span,
+    pub expr: Expr,
+}
+
+impl ExprStmt {
+    pub fn new(expr: Expr) -> Self {
+        Self {
+            span: expr.span,
+            expr,
+        }
+    }
+}
+
+impl From<ExprStmt> for Stmt {
+    fn from(value: ExprStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::ExprStmt(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PrintStmt {
+    pub span: Span,
+    pub expr: Expr,
+}
+
+impl PrintStmt {
+    pub fn new(expr: Expr) -> Self {
+        Self {
+            span: expr.span,
+            expr,
+        }
+    }
+}
+
+impl From<PrintStmt> for Stmt {
+    fn from(value: PrintStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Print(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableStmt {
+    pub span: Span,
+    pub var: Token,
+    pub initializer: Option<Expr>,
+}
+
+impl VariableStmt {
+    pub fn new(var: Token, initializer: Option<Expr>) -> Self {
+        let span = match &initializer {
+            Some(expr) => var.span.merge(&expr.span),
+            None => var.span,
+        };
+
+        Self {
+            span,
+            var,
             initializer,
+        }
+    }
+}
+
+impl From<VariableStmt> for Stmt {
+    fn from(value: VariableStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Variable(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ConditionalStmt {
+    pub span: Span,
+    pub condition: Expr,
+    pub when_true: Box<Stmt>,
+    pub when_false: Option<Box<Stmt>>,
+}
+
+impl ConditionalStmt {
+    pub fn new(condition: Expr, when_true: Stmt, when_false: Option<Stmt>) -> Self {
+        let span = match &when_false {
+            Some(else_branch) => condition
+                .span
+                .merge(&when_true.span)
+                .merge(&else_branch.span),
+            None => condition.span.merge(&when_true.span),
+        };
+
+        Self {
+            span,
+            condition,
+            when_true: Box::new(when_true),
+            when_false: when_false.map(Box::new),
+        }
+    }
+}
+
+impl From<ConditionalStmt> for Stmt {
+    fn from(value: ConditionalStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Conditional(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WhileStmt {
+    pub span: Span,
+    pub condition: Expr,
+    pub body: Box<Stmt>,
+}
+
+impl WhileStmt {
+    pub fn new(condition: Expr, body: Stmt) -> Self {
+        let span = condition.span.merge(&body.span);
+        Self {
+            span,
+            condition,
+            body: Box::new(body),
+        }
+    }
+}
+
+impl From<WhileStmt> for Stmt {
+    fn from(value: WhileStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::While(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ContinueStmt {
+    pub span: Span,
+}
+
+impl ContinueStmt {
+    pub fn new(span: Span) -> Self {
+        Self { span }
+    }
+}
+
+impl From<ContinueStmt> for Stmt {
+    fn from(value: ContinueStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Continue(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BreakStmt {
+    pub span: Span,
+}
+
+impl BreakStmt {
+    pub fn new(span: Span) -> Self {
+        Self { span }
+    }
+}
+
+impl From<BreakStmt> for Stmt {
+    fn from(value: BreakStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Break(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ForStmt {
+    pub span: Span,
+    pub initializer: Option<Box<Stmt>>,
+    pub condition: Option<Expr>,
+    pub increment: Option<Expr>,
+    pub body: Box<Stmt>,
+}
+
+impl ForStmt {
+    pub fn new(
+        initializer: Option<Stmt>,
+        condition: Option<Expr>,
+        increment: Option<Expr>,
+        body: Stmt,
+    ) -> Self {
+        let mut span = body.span;
+        if let Some(ref stmt) = initializer {
+            span = span.merge(&stmt.span)
+        }
+
+        if let Some(ref expr) = condition {
+            span = span.merge(&expr.span)
+        }
+
+        if let Some(ref expr) = increment {
+            span = span.merge(&expr.span)
+        }
+
+        Self {
+            span,
+            initializer: initializer.map(Box::new),
             condition,
             increment,
-            body,
-        } => visitor.visit_for(initializer, condition, increment, body),
+            body: Box::new(body),
+        }
+    }
+}
+
+impl From<ForStmt> for Stmt {
+    fn from(value: ForStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::For(value),
+        }
     }
 }

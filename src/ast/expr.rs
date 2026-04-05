@@ -14,88 +14,44 @@ pub struct Expr {
 }
 
 impl Expr {
-    pub fn unary(operator: Spanned<UnaryOp>, right: Expr) -> Self {
-        Self {
-            span: operator.span.merge(&right.span),
-            kind: ExprKind::Unary {
-                operator,
-                right: Box::new(right),
-            },
-        }
-    }
-
-    pub fn binary(left: Expr, operator: Spanned<BinaryOp>, right: Expr) -> Self {
-        Self {
-            span: left.span.merge(&right.span),
-            kind: ExprKind::Binary {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            },
-        }
-    }
-
     pub fn grouping(expr: Expr) -> Self {
-        Self {
-            span: expr.span,
-            kind: ExprKind::Grouping(Box::new(expr)),
-        }
+        GroupingExpr::new(expr).into()
     }
 
     pub fn assignment(name: Token, value: Expr) -> Self {
-        Self {
-            span: name.span.merge(&value.span),
-            kind: ExprKind::Assignment {
-                name,
-                value: Box::new(value),
-            },
-        }
+        AssignmentExpr::new(name, value).into()
     }
 
     pub fn logical(left: Expr, operator: Spanned<LogicalOp>, right: Expr) -> Self {
-        Self {
-            span: left.span.merge(&right.span),
-            kind: ExprKind::Logical {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            },
-        }
+        LogicalExpr::new(left, operator, right).into()
     }
 
-    pub fn variable(token: Token, at: Span) -> Self {
-        Self {
-            span: at,
-            kind: ExprKind::Variable { var: token },
-        }
+    pub fn variable(token: Token) -> Self {
+        VariableExpr::new(token).into()
     }
 
     pub fn bool_literal(value: bool, at: Span) -> Self {
-        Self {
-            span: at,
-            kind: ExprKind::BoolLiteral(value),
-        }
+        BoolLiteralExpr::new(value, at).into()
     }
 
     pub fn number_literal(value: f64, at: Span) -> Self {
-        Self {
-            span: at,
-            kind: ExprKind::NumberLiteral(value),
-        }
+        NumberLiteralExpr::new(value, at).into()
     }
 
     pub fn string_literal(value: String, at: Span) -> Self {
-        Self {
-            span: at,
-            kind: ExprKind::StringLiteral(value),
-        }
+        StringLiteralExpr::new(value, at).into()
     }
 
     pub fn nil(at: Span) -> Self {
-        Self {
-            span: at,
-            kind: ExprKind::Nil,
-        }
+        NilExpr::new(at).into()
+    }
+
+    pub fn unary(operator: Spanned<UnaryOp>, right: Expr) -> Self {
+        UnaryExpr::new(operator, right).into()
+    }
+
+    pub fn binary(left: Expr, operator: Spanned<BinaryOp>, right: Expr) -> Self {
+        BinaryExpr::new(left, operator, right).into()
     }
 }
 
@@ -226,34 +182,18 @@ impl Deref for Expr {
 
 #[derive(Debug, Clone)]
 pub enum ExprKind {
-    Unary {
-        operator: Spanned<UnaryOp>,
-        right: Box<Expr>,
-    },
-    Binary {
-        left: Box<Expr>,
-        operator: Spanned<BinaryOp>,
-        right: Box<Expr>,
-    },
-    Grouping(Box<Expr>),
-    Variable {
-        var: Token,
-    },
-    Assignment {
-        name: Token,
-        value: Box<Expr>,
-    },
-    Logical {
-        left: Box<Expr>,
-        operator: Spanned<LogicalOp>,
-        right: Box<Expr>,
-    },
+    Unary(UnaryExpr),
+    Binary(BinaryExpr),
+    Grouping(GroupingExpr),
+    Variable(VariableExpr),
+    Assignment(AssignmentExpr),
+    Logical(LogicalExpr),
 
     // Treat literals as individual expressions
-    BoolLiteral(bool),
-    NumberLiteral(f64),
-    StringLiteral(String),
-    Nil,
+    BoolLiteral(BoolLiteralExpr),
+    NumberLiteral(NumberLiteralExpr),
+    StringLiteral(StringLiteralExpr),
+    Nil(NilExpr),
 }
 
 impl std::fmt::Display for ExprKind {
@@ -280,58 +220,40 @@ pub trait ExprVisitor {
         walk_expr(&expr.kind, self)
     }
 
-    fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> Self::Output;
+    fn visit_unary(&mut self, expr: &UnaryExpr) -> Self::Output;
 
-    fn visit_binary(
-        &mut self,
-        left: &Expr,
-        operator: &Spanned<BinaryOp>,
-        right: &Expr,
-    ) -> Self::Output;
+    fn visit_binary(&mut self, expr: &BinaryExpr) -> Self::Output;
 
-    fn visit_grouping(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_grouping(&mut self, expr: &GroupingExpr) -> Self::Output;
 
-    fn visit_variable(&mut self, var: &Token) -> Self::Output;
+    fn visit_variable(&mut self, expr: &VariableExpr) -> Self::Output;
 
-    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> Self::Output;
+    fn visit_assignment(&mut self, expr: &AssignmentExpr) -> Self::Output;
 
-    fn visit_logical(
-        &mut self,
-        left: &Expr,
-        operator: &Spanned<LogicalOp>,
-        right: &Expr,
-    ) -> Self::Output;
+    fn visit_logical(&mut self, expr: &LogicalExpr) -> Self::Output;
 
-    fn visit_bool(&mut self, value: &bool) -> Self::Output;
+    fn visit_bool(&mut self, expr: &BoolLiteralExpr) -> Self::Output;
 
-    fn visit_number(&mut self, value: &f64) -> Self::Output;
+    fn visit_number(&mut self, expr: &NumberLiteralExpr) -> Self::Output;
 
-    fn visit_string(&mut self, value: &str) -> Self::Output;
+    fn visit_string(&mut self, expr: &StringLiteralExpr) -> Self::Output;
 
-    fn visit_nil(&mut self) -> Self::Output;
+    fn visit_nil(&mut self, expr: &NilExpr) -> Self::Output;
 }
 
 /// Default walking algorithm for expressions
 pub fn walk_expr<V: ExprVisitor>(expr: &ExprKind, visitor: &mut V) -> V::Output {
     match expr {
-        ExprKind::Unary { operator, right } => visitor.visit_unary(operator, right),
-        ExprKind::Binary {
-            left,
-            operator,
-            right,
-        } => visitor.visit_binary(left, operator, right),
-        ExprKind::Grouping(expr) => visitor.visit_grouping(expr),
-        ExprKind::Variable { var: name } => visitor.visit_variable(name),
-        ExprKind::Assignment { name, value } => visitor.visit_assignment(name, value),
-        ExprKind::Logical {
-            left,
-            operator,
-            right,
-        } => visitor.visit_logical(left, operator, right),
-        ExprKind::BoolLiteral(v) => visitor.visit_bool(v),
-        ExprKind::NumberLiteral(v) => visitor.visit_number(v),
-        ExprKind::StringLiteral(v) => visitor.visit_string(v),
-        ExprKind::Nil => visitor.visit_nil(),
+        ExprKind::Unary(e) => visitor.visit_unary(e),
+        ExprKind::Binary(e) => visitor.visit_binary(e),
+        ExprKind::Grouping(e) => visitor.visit_grouping(e),
+        ExprKind::Variable(e) => visitor.visit_variable(e),
+        ExprKind::Assignment(e) => visitor.visit_assignment(e),
+        ExprKind::Logical(e) => visitor.visit_logical(e),
+        ExprKind::BoolLiteral(e) => visitor.visit_bool(e),
+        ExprKind::NumberLiteral(e) => visitor.visit_number(e),
+        ExprKind::StringLiteral(e) => visitor.visit_string(e),
+        ExprKind::Nil(e) => visitor.visit_nil(e),
     }
 }
 
@@ -364,7 +286,7 @@ mod tests {
 
     #[test]
     fn literal() {
-        let literal = ExprKind::NumberLiteral(1.0);
+        let literal = Expr::number_literal(1.0, Span::default());
         let mut printer = AstPrinter::new();
         let result = literal.visit(&mut printer);
         assert_eq!(result, "1")
@@ -395,5 +317,244 @@ mod tests {
         let mut printer = AstPrinter::new();
         let result = e.visit(&mut printer);
         assert_eq!(result, "(* (- 123) (group 45.67))")
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UnaryExpr {
+    pub span: Span,
+    pub operator: Spanned<UnaryOp>,
+    pub right: Box<Expr>,
+}
+
+impl UnaryExpr {
+    pub fn new(operator: Spanned<UnaryOp>, right: Expr) -> Self {
+        UnaryExpr {
+            span: operator.span.merge(&right.span),
+            operator,
+            right: Box::new(right),
+        }
+    }
+}
+
+impl From<UnaryExpr> for Expr {
+    fn from(value: UnaryExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Unary(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BinaryExpr {
+    pub span: Span,
+    pub left: Box<Expr>,
+    pub operator: Spanned<BinaryOp>,
+    pub right: Box<Expr>,
+}
+
+impl BinaryExpr {
+    pub fn new(left: Expr, operator: Spanned<BinaryOp>, right: Expr) -> Self {
+        Self {
+            span: left.span.merge(&right.span),
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        }
+    }
+}
+
+impl From<BinaryExpr> for Expr {
+    fn from(value: BinaryExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Binary(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GroupingExpr {
+    pub span: Span,
+    pub group: Box<Expr>,
+}
+
+impl GroupingExpr {
+    pub fn new(group: Expr) -> Self {
+        Self {
+            span: group.span,
+            group: Box::new(group),
+        }
+    }
+}
+
+impl From<GroupingExpr> for Expr {
+    fn from(value: GroupingExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Grouping(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableExpr {
+    pub span: Span,
+    pub var: Token,
+}
+
+impl VariableExpr {
+    pub fn new(var: Token) -> Self {
+        Self {
+            span: var.span,
+            var,
+        }
+    }
+}
+
+impl From<VariableExpr> for Expr {
+    fn from(value: VariableExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Variable(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignmentExpr {
+    pub span: Span,
+    pub name: Token,
+    pub value: Box<Expr>,
+}
+
+impl AssignmentExpr {
+    pub fn new(name: Token, value: Expr) -> Self {
+        Self {
+            span: name.span.merge(&value.span),
+            name,
+            value: Box::new(value),
+        }
+    }
+}
+
+impl From<AssignmentExpr> for Expr {
+    fn from(value: AssignmentExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Assignment(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LogicalExpr {
+    pub span: Span,
+    pub left: Box<Expr>,
+    pub operator: Spanned<LogicalOp>,
+    pub right: Box<Expr>,
+}
+
+impl LogicalExpr {
+    pub fn new(left: Expr, operator: Spanned<LogicalOp>, right: Expr) -> Self {
+        Self {
+            span: left.span.merge(&right.span),
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        }
+    }
+}
+
+impl From<LogicalExpr> for Expr {
+    fn from(value: LogicalExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Logical(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BoolLiteralExpr {
+    pub span: Span,
+    pub value: bool,
+}
+
+impl BoolLiteralExpr {
+    pub fn new(value: bool, span: Span) -> Self {
+        Self { span, value }
+    }
+}
+
+impl From<BoolLiteralExpr> for Expr {
+    fn from(value: BoolLiteralExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::BoolLiteral(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NumberLiteralExpr {
+    pub span: Span,
+    pub value: f64,
+}
+
+impl NumberLiteralExpr {
+    pub fn new(value: f64, span: Span) -> Self {
+        Self { span, value }
+    }
+}
+
+impl From<NumberLiteralExpr> for Expr {
+    fn from(value: NumberLiteralExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::NumberLiteral(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct StringLiteralExpr {
+    pub span: Span,
+    pub value: String,
+}
+
+impl StringLiteralExpr {
+    pub fn new(value: String, span: Span) -> Self {
+        Self { span, value }
+    }
+}
+
+impl From<StringLiteralExpr> for Expr {
+    fn from(value: StringLiteralExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::StringLiteral(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NilExpr {
+    pub span: Span,
+}
+
+impl NilExpr {
+    pub fn new(span: Span) -> Self {
+        Self { span }
+    }
+}
+
+impl From<NilExpr> for Expr {
+    fn from(value: NilExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::Nil(value),
+        }
     }
 }

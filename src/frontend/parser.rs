@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
             let value = self.assignment()?;
 
             return match expr.kind {
-                ExprKind::Variable { var: name } => Ok(Expr::assignment(name, value)),
+                ExprKind::Variable(v) => Ok(Expr::assignment(v.var.clone(), value)),
                 _ => Err(ParserError::invalid_assignment_target(
                     equals.kind,
                     equals.span,
@@ -266,7 +266,7 @@ impl<'a> Parser<'a> {
                 self.consume(TokenKind::RightParen, "missing ) after expression.")?;
                 Ok(Expr::grouping(expr))
             }
-            TokenKind::Identifier => Ok(Expr::variable(token.clone(), token.span)),
+            TokenKind::Identifier => Ok(Expr::variable(token.clone())),
 
             _ => Err(ParserError::expected_expression(self.last_span)),
         }

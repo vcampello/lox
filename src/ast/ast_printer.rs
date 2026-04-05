@@ -1,5 +1,4 @@
-use super::{BinaryOp, Expr, ExprVisitor, LogicalOp, Stmt, StmtVisitor, Token, UnaryOp};
-use crate::common::Spanned;
+use super::*;
 
 #[derive(Debug, Default)]
 pub struct AstPrinter {}
@@ -13,58 +12,53 @@ impl AstPrinter {
 impl ExprVisitor for AstPrinter {
     type Output = String;
 
-    fn visit_number(&mut self, value: &f64) -> String {
-        value.to_string()
+    fn visit_number(&mut self, expr: &NumberLiteralExpr) -> String {
+        expr.value.to_string()
     }
 
-    fn visit_string(&mut self, value: &str) -> String {
-        format!("\"{}\"", value)
+    fn visit_string(&mut self, expr: &StringLiteralExpr) -> String {
+        format!("\"{}\"", expr.value)
     }
 
-    fn visit_bool(&mut self, value: &bool) -> String {
-        value.to_string()
+    fn visit_bool(&mut self, expr: &BoolLiteralExpr) -> String {
+        expr.value.to_string()
     }
 
-    fn visit_nil(&mut self) -> String {
+    fn visit_nil(&mut self, _expr: &NilExpr) -> String {
         "nil".to_string()
     }
 
-    fn visit_grouping(&mut self, expr: &Expr) -> String {
-        format!("(group {})", expr.visit(self))
+    fn visit_grouping(&mut self, expr: &GroupingExpr) -> String {
+        format!("(group {})", expr.group.visit(self))
     }
 
-    fn visit_unary(&mut self, operator: &Spanned<UnaryOp>, right: &Expr) -> String {
-        format!("({} {})", operator.value, right.visit(self))
+    fn visit_unary(&mut self, expr: &UnaryExpr) -> String {
+        format!("({} {})", expr.operator.value, expr.right.visit(self))
     }
 
-    fn visit_binary(&mut self, left: &Expr, operator: &Spanned<BinaryOp>, right: &Expr) -> String {
+    fn visit_binary(&mut self, expr: &BinaryExpr) -> String {
         format!(
             "({} {} {})",
-            operator.value,
-            left.visit(self),
-            right.visit(self)
+            expr.operator.value,
+            expr.left.visit(self),
+            expr.right.visit(self)
         )
     }
 
-    fn visit_variable(&mut self, name: &Token) -> String {
-        name.lexeme.clone()
+    fn visit_variable(&mut self, expr: &VariableExpr) -> String {
+        expr.var.lexeme.clone()
     }
 
-    fn visit_assignment(&mut self, name: &Token, value: &Expr) -> String {
-        format!("(= {} {})", name.lexeme, value.visit(self))
+    fn visit_assignment(&mut self, expr: &AssignmentExpr) -> String {
+        format!("(= {} {})", expr.name.lexeme, expr.value.visit(self))
     }
 
-    fn visit_logical(
-        &mut self,
-        left: &Expr,
-        operator: &Spanned<LogicalOp>,
-        right: &Expr,
-    ) -> String {
+    fn visit_logical(&mut self, expr: &LogicalExpr) -> String {
         format!(
             "({} {} {})",
-            operator.value,
-            left.visit(self),
-            right.visit(self)
+            expr.operator.value,
+            expr.left.visit(self),
+            expr.right.visit(self)
         )
     }
 }
@@ -72,8 +66,9 @@ impl ExprVisitor for AstPrinter {
 impl StmtVisitor for AstPrinter {
     type Output = String;
 
-    fn visit_block(&mut self, stmts: &[Stmt]) -> Self::Output {
-        let body = stmts
+    fn visit_block(&mut self, stmt: &BlockStmt) -> Self::Output {
+        let body = stmt
+            .stmts
             .iter()
             .map(|stmt| stmt.visit(self))
             .collect::<Vec<_>>()
@@ -81,72 +76,70 @@ impl StmtVisitor for AstPrinter {
         format!("(block {})", body)
     }
 
-    fn visit_expression(&mut self, expr: &Expr) -> Self::Output {
-        expr.visit(self)
+    fn visit_expr_stmt(&mut self, stmt: &ExprStmt) -> Self::Output {
+        stmt.expr.visit(self)
     }
 
-    fn visit_print(&mut self, expr: &Expr) -> Self::Output {
-        format!("(print {})", expr.visit(self))
+    fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output {
+        format!("(print {})", stmt.expr.visit(self))
     }
 
-    fn visit_variable(&mut self, var: &Token, initializer: &Option<Expr>) -> Self::Output {
-        match initializer {
-            Some(expr) => format!("(var {} = {})", var.lexeme, expr.visit(self)),
-            None => format!("(var {})", var.lexeme),
+    fn visit_variable(&mut self, stmt: &VariableStmt) -> Self::Output {
+        match &stmt.initializer {
+            Some(expr) => format!("(var {} = {})", stmt.var.lexeme, expr.visit(self)),
+            None => format!("(var {})", stmt.var.lexeme),
         }
     }
 
-    fn visit_conditional(
-        &mut self,
-        condition: &Expr,
-        when_true: &Stmt,
-        when_false: &Option<Box<Stmt>>,
-    ) -> Self::Output {
-        let cond = condition.visit(self);
-        let true_result = when_true.visit(self);
+    fn visit_conditional(&mut self, stmt: &ConditionalStmt) -> Self::Output {
+        let cond = stmt.condition.visit(self);
+        let true_result = stmt.when_true.visit(self);
 
-        match when_false.as_ref().map(|stmt| stmt.visit(self)) {
+        match stmt.when_false.as_ref().map(|stmt| stmt.visit(self)) {
             Some(false_result) => format!("(if {} {} {})", cond, true_result, false_result),
             None => format!("(if {} {})", cond, true_result),
         }
     }
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Self::Output {
-        let cond = condition.visit(self);
+    fn visit_while(&mut self, stmt: &WhileStmt) -> Self::Output {
+        let cond = stmt.condition.visit(self);
 
-        format!("(while {} {})", cond, body.visit(self))
+        format!("(while {} {})", cond, stmt.body.visit(self))
     }
 
-    fn visit_continue(&mut self) -> Self::Output {
+    fn visit_continue(&mut self, _stmt: &ContinueStmt) -> Self::Output {
         "continue".to_string()
     }
 
-    fn visit_break(&mut self) -> Self::Output {
+    fn visit_break(&mut self, _stmt: &BreakStmt) -> Self::Output {
         "break".to_string()
     }
 
-    fn visit_for(
-        &mut self,
-        initializer: &Option<Box<Stmt>>,
-        condition: &Option<Expr>,
-        increment: &Option<Expr>,
-        body: &Stmt,
-    ) -> Self::Output {
-        let init = initializer
+    fn visit_for(&mut self, stmt: &ForStmt) -> Self::Output {
+        let init = stmt
+            .initializer
             .as_ref()
             .map(|stmt| stmt.visit(self))
             .unwrap_or("_".to_string());
 
-        let cond = condition
+        let cond = stmt
+            .condition
             .as_ref()
             .map(|expr| expr.visit(self))
             .unwrap_or("_".to_string());
 
-        let inc = increment
+        let inc = stmt
+            .increment
             .as_ref()
             .map(|expr| expr.visit(self))
             .unwrap_or("_".to_string());
 
-        format!("(for {}; {}; {}; {})", init, cond, inc, body.visit(self))
+        format!(
+            "(for {}; {}; {}; {})",
+            init,
+            cond,
+            inc,
+            stmt.body.visit(self)
+        )
     }
 }
