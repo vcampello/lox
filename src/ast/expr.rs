@@ -13,6 +13,7 @@ pub struct Expr {
     pub span: Span,
 }
 
+// REVIEW: From<ExprKind> for Expr may be a better fit
 impl Expr {
     pub fn grouping(expr: Expr) -> Self {
         GroupingExpr::new(expr).into()
@@ -52,6 +53,23 @@ impl Expr {
 
     pub fn binary(left: Expr, operator: Spanned<BinaryOp>, right: Expr) -> Self {
         BinaryExpr::new(left, operator, right).into()
+    }
+}
+
+impl From<ExprKind> for Expr {
+    fn from(value: ExprKind) -> Self {
+        match value {
+            ExprKind::Unary(unary_expr) => unary_expr.into(),
+            ExprKind::Binary(binary_expr) => binary_expr.into(),
+            ExprKind::Grouping(grouping_expr) => grouping_expr.into(),
+            ExprKind::Variable(variable_expr) => variable_expr.into(),
+            ExprKind::Assignment(assignment_expr) => assignment_expr.into(),
+            ExprKind::Logical(logical_expr) => logical_expr.into(),
+            ExprKind::BoolLiteral(bool_literal_expr) => bool_literal_expr.into(),
+            ExprKind::NumberLiteral(number_literal_expr) => number_literal_expr.into(),
+            ExprKind::StringLiteral(string_literal_expr) => string_literal_expr.into(),
+            ExprKind::Nil(nil_expr) => nil_expr.into(),
+        }
     }
 }
 
