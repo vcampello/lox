@@ -7,7 +7,7 @@ use crate::{
     frontend::ParserErrorKind,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
@@ -54,6 +54,10 @@ impl Expr {
     pub fn binary(left: Expr, operator: Spanned<BinaryOp>, right: Expr) -> Self {
         BinaryExpr::new(left, operator, right).into()
     }
+
+    pub fn call(call: Expr, arguments: Vec<Expr>) -> Self {
+        CallExpr::new(call, arguments).into()
+    }
 }
 
 impl From<ExprKind> for Expr {
@@ -69,11 +73,12 @@ impl From<ExprKind> for Expr {
             ExprKind::NumberLiteral(number_literal_expr) => number_literal_expr.into(),
             ExprKind::StringLiteral(string_literal_expr) => string_literal_expr.into(),
             ExprKind::Nil(nil_expr) => nil_expr.into(),
+            ExprKind::CallExpr(call_expr) => call_expr.into(),
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum UnaryOp {
     /// Negative
     Neg,
@@ -104,7 +109,7 @@ impl TryFrom<TokenKind> for UnaryOp {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum BinaryOp {
     Add,
     Sub,
@@ -160,7 +165,7 @@ impl TryFrom<TokenKind> for BinaryOp {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum LogicalOp {
     And,
     Or,
@@ -198,20 +203,21 @@ impl Deref for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ExprKind {
-    Unary(UnaryExpr),
-    Binary(BinaryExpr),
-    Grouping(GroupingExpr),
-    Variable(VariableExpr),
     Assignment(AssignmentExpr),
+    Binary(BinaryExpr),
+    CallExpr(CallExpr),
+    Grouping(GroupingExpr),
     Logical(LogicalExpr),
+    Unary(UnaryExpr),
+    Variable(VariableExpr),
 
     // Treat literals as individual expressions
     BoolLiteral(BoolLiteralExpr),
+    Nil(NilExpr),
     NumberLiteral(NumberLiteralExpr),
     StringLiteral(StringLiteralExpr),
-    Nil(NilExpr),
 }
 
 impl std::fmt::Display for ExprKind {
@@ -238,40 +244,33 @@ pub trait ExprVisitor {
         walk_expr(&expr.kind, self)
     }
 
-    fn visit_unary(&mut self, expr: &UnaryExpr) -> Self::Output;
-
-    fn visit_binary(&mut self, expr: &BinaryExpr) -> Self::Output;
-
-    fn visit_grouping(&mut self, expr: &GroupingExpr) -> Self::Output;
-
-    fn visit_variable(&mut self, expr: &VariableExpr) -> Self::Output;
-
     fn visit_assignment(&mut self, expr: &AssignmentExpr) -> Self::Output;
-
-    fn visit_logical(&mut self, expr: &LogicalExpr) -> Self::Output;
-
+    fn visit_binary(&mut self, expr: &BinaryExpr) -> Self::Output;
     fn visit_bool(&mut self, expr: &BoolLiteralExpr) -> Self::Output;
-
-    fn visit_number(&mut self, expr: &NumberLiteralExpr) -> Self::Output;
-
-    fn visit_string(&mut self, expr: &StringLiteralExpr) -> Self::Output;
-
+    fn visit_call(&mut self, expr: &CallExpr) -> Self::Output;
+    fn visit_grouping(&mut self, expr: &GroupingExpr) -> Self::Output;
+    fn visit_logical(&mut self, expr: &LogicalExpr) -> Self::Output;
     fn visit_nil(&mut self, expr: &NilExpr) -> Self::Output;
+    fn visit_number(&mut self, expr: &NumberLiteralExpr) -> Self::Output;
+    fn visit_string(&mut self, expr: &StringLiteralExpr) -> Self::Output;
+    fn visit_unary(&mut self, expr: &UnaryExpr) -> Self::Output;
+    fn visit_variable(&mut self, expr: &VariableExpr) -> Self::Output;
 }
 
 /// Default walking algorithm for expressions
 pub fn walk_expr<V: ExprVisitor>(expr: &ExprKind, visitor: &mut V) -> V::Output {
     match expr {
-        ExprKind::Unary(e) => visitor.visit_unary(e),
-        ExprKind::Binary(e) => visitor.visit_binary(e),
-        ExprKind::Grouping(e) => visitor.visit_grouping(e),
-        ExprKind::Variable(e) => visitor.visit_variable(e),
         ExprKind::Assignment(e) => visitor.visit_assignment(e),
-        ExprKind::Logical(e) => visitor.visit_logical(e),
+        ExprKind::Binary(e) => visitor.visit_binary(e),
         ExprKind::BoolLiteral(e) => visitor.visit_bool(e),
+        ExprKind::CallExpr(e) => visitor.visit_call(e),
+        ExprKind::Grouping(e) => visitor.visit_grouping(e),
+        ExprKind::Logical(e) => visitor.visit_logical(e),
+        ExprKind::Nil(e) => visitor.visit_nil(e),
         ExprKind::NumberLiteral(e) => visitor.visit_number(e),
         ExprKind::StringLiteral(e) => visitor.visit_string(e),
-        ExprKind::Nil(e) => visitor.visit_nil(e),
+        ExprKind::Unary(e) => visitor.visit_unary(e),
+        ExprKind::Variable(e) => visitor.visit_variable(e),
     }
 }
 
@@ -338,7 +337,7 @@ mod tests {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct UnaryExpr {
     pub span: Span,
     pub operator: Spanned<UnaryOp>,
@@ -364,7 +363,7 @@ impl From<UnaryExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct BinaryExpr {
     pub span: Span,
     pub left: Box<Expr>,
@@ -392,7 +391,7 @@ impl From<BinaryExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct GroupingExpr {
     pub span: Span,
     pub group: Box<Expr>,
@@ -416,7 +415,7 @@ impl From<GroupingExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct VariableExpr {
     pub span: Span,
     pub var: Token,
@@ -440,7 +439,7 @@ impl From<VariableExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct AssignmentExpr {
     pub span: Span,
     pub name: Token,
@@ -466,7 +465,7 @@ impl From<AssignmentExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct LogicalExpr {
     pub span: Span,
     pub left: Box<Expr>,
@@ -494,7 +493,36 @@ impl From<LogicalExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct CallExpr {
+    pub span: Span,
+    pub callee: Box<Expr>,
+    pub arguments: Vec<Expr>,
+}
+
+impl CallExpr {
+    pub fn new(callee: Expr, arguments: Vec<Expr>) -> Self {
+        let span = arguments
+            .iter()
+            .fold(callee.span, |acc, e| acc.merge(&e.span));
+        Self {
+            span,
+            arguments,
+            callee: Box::new(callee),
+        }
+    }
+}
+
+impl From<CallExpr> for Expr {
+    fn from(value: CallExpr) -> Self {
+        Self {
+            span: value.span,
+            kind: ExprKind::CallExpr(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct BoolLiteralExpr {
     pub span: Span,
     pub value: bool,
@@ -515,7 +543,7 @@ impl From<BoolLiteralExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct NumberLiteralExpr {
     pub span: Span,
     pub value: f64,
@@ -536,7 +564,7 @@ impl From<NumberLiteralExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct StringLiteralExpr {
     pub span: Span,
     pub value: String,
@@ -557,7 +585,7 @@ impl From<StringLiteralExpr> for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct NilExpr {
     pub span: Span,
 }

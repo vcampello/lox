@@ -61,17 +61,23 @@ pub struct ParserError {
 }
 
 impl ParserError {
-    pub fn expected_token(message: &'static str, token_kind: TokenKind, span: Span) -> Self {
+    pub fn expected_token(
+        message: String,
+        expected: TokenKind,
+        found: TokenKind,
+        span: Span,
+    ) -> Self {
         Self {
             span: span.into(),
             kind: ParserErrorKind::ExpectedToken {
-                token_kind,
+                expected,
+                found,
                 message,
             },
         }
     }
 
-    pub fn unexpected_eof(message: &'static str, span: Span) -> Self {
+    pub fn unexpected_eof(message: String, span: Span) -> Self {
         Self {
             span: span.into(),
             kind: ParserErrorKind::UnexpectedEof { message },
@@ -108,18 +114,26 @@ impl ParserError {
             },
         }
     }
+
+    pub fn too_many_arguments(max_args: usize, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: ParserErrorKind::TooManyArguments { max_args },
+        }
+    }
 }
 
 #[derive(Error, Debug)]
 pub enum ParserErrorKind {
-    #[error("Expected token {token_kind}: {message}")]
+    #[error("Expected token {expected} but found {found}: {message}")]
     ExpectedToken {
-        token_kind: TokenKind,
-        message: &'static str,
+        expected: TokenKind,
+        found: TokenKind,
+        message: String,
     },
 
     #[error("Unexpected EOF: {message}")]
-    UnexpectedEof { message: &'static str },
+    UnexpectedEof { message: String },
 
     #[error("Expected expression")]
     ExpectedExpression,
@@ -135,4 +149,7 @@ pub enum ParserErrorKind {
         operation: &'static str,
         token_kind: TokenKind,
     },
+
+    #[error("Exceeded {max_args} arguments")]
+    TooManyArguments { max_args: usize },
 }

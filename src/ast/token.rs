@@ -2,7 +2,7 @@ use super::TokenKind;
 use crate::common::Span;
 use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,

@@ -1,10 +1,13 @@
 use std::fmt;
 
+use crate::ast::FunctionStmt;
+
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Value {
     Bool(bool),
     Number(f64),
     String(String),
+    Function(FunctionStmt),
     Nil,
 }
 
@@ -15,8 +18,7 @@ impl Value {
             Value::Bool(v) => *v,
 
             // lox follows the ruby rules: everything aside from nil is true
-            Value::Number(_) => true,
-            Value::String(_) => true,
+            _ => true,
         }
     }
 }
@@ -28,6 +30,7 @@ impl fmt::Display for Value {
             Self::Number(v) => write!(f, "{v}"),
             Self::Bool(v) => write!(f, "{v}"),
             Self::Nil => write!(f, "nil"),
+            Self::Function(v) => write!(f, "<funtion {}>", v.name),
         }
     }
 }

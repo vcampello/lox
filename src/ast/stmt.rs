@@ -4,7 +4,7 @@ use super::Token;
 use crate::ast::{AstPrinter, Expr};
 use crate::common::Span;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Stmt {
     pub kind: StmtKind,
     pub span: Span,
@@ -51,6 +51,10 @@ impl Stmt {
     ) -> Self {
         ForStmt::new(initializer, condition, increment, body).into()
     }
+
+    pub fn function_stmt(name: Token, params: Vec<Token>, body: Stmt) -> Self {
+        FunctionStmt::new(name, params, body).into()
+    }
 }
 
 impl Deref for Stmt {
@@ -61,7 +65,7 @@ impl Deref for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum StmtKind {
     Block(BlockStmt),
     ExprStmt(ExprStmt),
@@ -69,6 +73,8 @@ pub enum StmtKind {
     Variable(VariableStmt),
     Conditional(ConditionalStmt),
     While(WhileStmt),
+    Function(FunctionStmt),
+
     Continue(ContinueStmt),
     Break(BreakStmt),
     For(ForStmt),
@@ -115,6 +121,8 @@ pub trait StmtVisitor {
     fn visit_break(&mut self, stmt: &BreakStmt) -> Self::Output;
 
     fn visit_for(&mut self, stmt: &ForStmt) -> Self::Output;
+
+    fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output;
 }
 
 /// Default walking algorithm for statements
@@ -129,10 +137,11 @@ pub fn walk_stmt<V: StmtVisitor>(stmt: &StmtKind, visitor: &mut V) -> V::Output 
         StmtKind::Continue(s) => visitor.visit_continue(s),
         StmtKind::Break(s) => visitor.visit_break(s),
         StmtKind::For(s) => visitor.visit_for(s),
+        StmtKind::Function(s) => visitor.visit_function(s),
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct BlockStmt {
     pub span: Span,
     pub stmts: Vec<Stmt>,
@@ -162,7 +171,7 @@ impl From<BlockStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ExprStmt {
     pub span: Span,
     pub expr: Expr,
@@ -186,7 +195,7 @@ impl From<ExprStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct PrintStmt {
     pub span: Span,
     pub expr: Expr,
@@ -210,7 +219,7 @@ impl From<PrintStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct VariableStmt {
     pub span: Span,
     pub name: String,
@@ -241,7 +250,7 @@ impl From<VariableStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ConditionalStmt {
     pub span: Span,
     pub condition: Expr,
@@ -277,7 +286,7 @@ impl From<ConditionalStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct WhileStmt {
     pub span: Span,
     pub condition: Expr,
@@ -304,7 +313,7 @@ impl From<WhileStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ContinueStmt {
     pub span: Span,
 }
@@ -324,7 +333,7 @@ impl From<ContinueStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct BreakStmt {
     pub span: Span,
 }
@@ -344,7 +353,7 @@ impl From<BreakStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ForStmt {
     pub span: Span,
     pub initializer: Option<Box<Stmt>>,
@@ -388,6 +397,39 @@ impl From<ForStmt> for Stmt {
         Self {
             span: value.span,
             kind: StmtKind::For(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct FunctionStmt {
+    pub span: Span,
+    pub name: Token,
+    pub params: Vec<Token>,
+    // FIXME: this should actually be this
+    // pub body: BlockStmt,
+    pub body: Box<Stmt>,
+}
+
+impl FunctionStmt {
+    pub fn new(name: Token, params: Vec<Token>, body: Stmt) -> Self {
+        let param_spans = params.iter().fold(name.span, |acc, e| acc.merge(&e.span));
+        let span = param_spans.merge(&name.span.merge(&body.span));
+
+        Self {
+            span,
+            name,
+            params,
+            body: Box::new(body),
+        }
+    }
+}
+
+impl From<FunctionStmt> for Stmt {
+    fn from(value: FunctionStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Function(value),
         }
     }
 }

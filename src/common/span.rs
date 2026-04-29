@@ -1,6 +1,6 @@
 use miette::SourceSpan;
 
-#[derive(Debug, Clone, Default, Copy)]
+#[derive(Debug, Clone, Default, Copy, PartialEq, PartialOrd)]
 pub struct Span {
     /// source code end line (0 indexed)
     pub line: usize,
@@ -44,7 +44,7 @@ impl From<Span> for SourceSpan {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Spanned<T> {
     pub value: T,
     pub span: Span,

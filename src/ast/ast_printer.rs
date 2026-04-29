@@ -61,6 +61,11 @@ impl ExprVisitor for AstPrinter {
             expr.right.visit(self)
         )
     }
+
+    fn visit_call(&mut self, _expr: &CallExpr) -> Self::Output {
+        // enhance this once the printer is revisited
+        "call".to_string()
+    }
 }
 
 impl StmtVisitor for AstPrinter {
@@ -141,5 +146,9 @@ impl StmtVisitor for AstPrinter {
             inc,
             stmt.body.visit(self)
         )
+    }
+
+    fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output {
+        format!("<function {}>", stmt.name.lexeme,)
     }
 }

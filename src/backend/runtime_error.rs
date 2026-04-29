@@ -43,6 +43,13 @@ impl RuntimeError {
             span: span.into(),
         }
     }
+
+    pub fn not_callable(span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: RuntimeErrorKind::NotCallable,
+        }
+    }
 }
 
 #[derive(Error, Debug, Diagnostic)]
@@ -58,4 +65,7 @@ pub enum RuntimeErrorKind {
 
     #[error("Break")]
     Break,
+
+    #[error("Not callable")]
+    NotCallable,
 }

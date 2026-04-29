@@ -168,6 +168,12 @@ impl StmtVisitor for Interpreter {
 
         Ok(())
     }
+
+    fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output {
+        let declaration = Value::Function(stmt.clone());
+        self.env.define(&stmt.name.lexeme, &declaration);
+        Ok(())
+    }
 }
 
 impl ExprVisitor for Interpreter {
@@ -278,6 +284,37 @@ impl ExprVisitor for Interpreter {
     }
 
     fn visit_nil(&mut self, _expr: &NilExpr) -> Self::Output {
+        Ok(Value::Nil)
+    }
+
+    fn visit_call(&mut self, expr: &CallExpr) -> Self::Output {
+        // fetch function definition from environment
+        let callee = self.visit_expr(&expr.callee)?;
+
+        // extract function
+        let func = match callee {
+            Value::Function(v) => v,
+            // should this be the span of callee instead?
+            _ => return Err(RuntimeError::not_callable(expr.callee.span)),
+        };
+
+        // evaluate arguments
+        let mut arguments = Vec::new();
+        for arg in &expr.arguments {
+            arguments.push(self.visit_expr(arg)?);
+        }
+
+        // Bind parameters
+        for (param, arg) in func.params.iter().zip(arguments.iter()) {
+            self.env.define(&param.lexeme, arg);
+        }
+
+        // execute body
+        self.env.begin_scope();
+        // TODO: drop the result for now. This will need to be revisited for the return statement
+        _ = self.visit_stmt(&func.body);
+        self.env.end_scope();
+
         Ok(Value::Nil)
     }
 }
