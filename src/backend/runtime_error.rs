@@ -50,6 +50,13 @@ impl RuntimeError {
             kind: RuntimeErrorKind::NotCallable,
         }
     }
+
+    pub fn incorrect_arity(expected: usize, received: usize, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: RuntimeErrorKind::IncorrectArity { expected, received },
+        }
+    }
 }
 
 #[derive(Error, Debug, Diagnostic)]
@@ -68,4 +75,7 @@ pub enum RuntimeErrorKind {
 
     #[error("Not callable")]
     NotCallable,
+
+    #[error("Incorrect arity. Expected {expected} arguments but received {received}")]
+    IncorrectArity { expected: usize, received: usize },
 }

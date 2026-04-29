@@ -298,15 +298,21 @@ impl ExprVisitor for Interpreter {
             _ => return Err(RuntimeError::not_callable(expr.callee.span)),
         };
 
-        // evaluate arguments
-        let mut arguments = Vec::new();
-        for arg in &expr.arguments {
-            arguments.push(self.visit_expr(arg)?);
+        // validate that the number of arguments is correct
+        if expr.arguments.len() != func.params.len() {
+            return Err(RuntimeError::incorrect_arity(
+                func.params.len(),
+                expr.arguments.len(),
+                expr.span,
+            ));
         }
 
         // Bind parameters
-        for (param, arg) in func.params.iter().zip(arguments.iter()) {
-            self.env.define(&param.lexeme, arg);
+        for (param, argument) in func.params.iter().zip(expr.arguments.iter()) {
+            // evaluate argument
+            let value = self.visit_expr(argument)?;
+            // assign to function scope
+            self.env.define(&param.lexeme, &value);
         }
 
         // execute body
