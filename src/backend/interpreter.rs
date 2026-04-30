@@ -318,6 +318,7 @@ impl ExprVisitor for Interpreter {
         }
 
         // Bind parameters
+        self.env.begin_scope();
         for (param, argument) in func.params.iter().zip(expr.arguments.iter()) {
             // evaluate argument
             let value = self.visit_expr(argument)?;
@@ -326,7 +327,6 @@ impl ExprVisitor for Interpreter {
         }
 
         // execute body
-        self.env.begin_scope();
         // TODO: drop the result for now. This will need to be revisited for the return statement
         let result = self.visit_stmt(&func.body);
         self.env.end_scope();
