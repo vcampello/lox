@@ -171,8 +171,18 @@ impl StmtVisitor for Interpreter {
 
     fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output {
         let declaration = Value::Function(stmt.clone());
-        self.env.define(&stmt.name.lexeme, &declaration);
+        self.env.define(&stmt.name, &declaration);
         Ok(())
+    }
+
+    fn visit_return(&mut self, stmt: &ReturnStmt) -> Self::Output {
+        let Some(expr) = &stmt.value else {
+            return Ok(());
+        };
+
+        let value = self.visit_expr(expr)?;
+
+        Err(RuntimeError::return_value(value, stmt.span))
     }
 }
 
@@ -318,9 +328,21 @@ impl ExprVisitor for Interpreter {
         // execute body
         self.env.begin_scope();
         // TODO: drop the result for now. This will need to be revisited for the return statement
-        _ = self.visit_stmt(&func.body);
+        let result = self.visit_stmt(&func.body);
         self.env.end_scope();
 
-        Ok(Value::Nil)
+        // Execute body and catch returns
+        let value = match result {
+            Ok(_) => Value::Nil,
+            Err(RuntimeError {
+                kind: RuntimeErrorKind::Return { value },
+                ..
+            }) => value,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+
+        Ok(value)
     }
 }

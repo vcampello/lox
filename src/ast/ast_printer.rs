@@ -149,6 +149,13 @@ impl StmtVisitor for AstPrinter {
     }
 
     fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output {
-        format!("<function {}>", stmt.name.lexeme,)
+        format!("<function {}>", stmt.name)
+    }
+
+    fn visit_return(&mut self, stmt: &ReturnStmt) -> Self::Output {
+        match &stmt.value {
+            Some(stmt) => format!("<return {}>", stmt.visit(self)),
+            None => format!("<return nil>"),
+        }
     }
 }

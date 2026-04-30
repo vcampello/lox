@@ -1,10 +1,10 @@
 // Allow unused assignments - required by miette::Diagnostic derive macro
 #![allow(unused_assignments)]
 
+use super::Value;
+use crate::common::Span;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
-
-use crate::common::Span;
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("{kind}")]
@@ -57,6 +57,13 @@ impl RuntimeError {
             kind: RuntimeErrorKind::IncorrectArity { expected, received },
         }
     }
+
+    pub fn return_value(value: Value, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: RuntimeErrorKind::Return { value },
+        }
+    }
 }
 
 #[derive(Error, Debug, Diagnostic)]
@@ -72,6 +79,9 @@ pub enum RuntimeErrorKind {
 
     #[error("Break")]
     Break,
+
+    #[error("Return {value}")]
+    Return { value: Value },
 
     #[error("Not callable")]
     NotCallable,

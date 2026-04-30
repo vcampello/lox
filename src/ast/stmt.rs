@@ -19,6 +19,10 @@ impl Stmt {
         ContinueStmt::new(span).into()
     }
 
+    pub fn return_stmt(expr: Option<Expr>, span: Span) -> Self {
+        ReturnStmt::new(expr, span).into()
+    }
+
     pub fn break_stmt(span: Span) -> Self {
         BreakStmt::new(span).into()
     }
@@ -52,7 +56,7 @@ impl Stmt {
         ForStmt::new(initializer, condition, increment, body).into()
     }
 
-    pub fn function_stmt(name: Token, params: Vec<Token>, body: Stmt) -> Self {
+    pub fn function_stmt(name: String, params: Vec<Token>, body: Stmt) -> Self {
         FunctionStmt::new(name, params, body).into()
     }
 }
@@ -68,16 +72,16 @@ impl Deref for Stmt {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum StmtKind {
     Block(BlockStmt),
-    ExprStmt(ExprStmt),
-    Print(PrintStmt),
-    Variable(VariableStmt),
-    Conditional(ConditionalStmt),
-    While(WhileStmt),
-    Function(FunctionStmt),
-
-    Continue(ContinueStmt),
     Break(BreakStmt),
+    Conditional(ConditionalStmt),
+    Continue(ContinueStmt),
+    ExprStmt(ExprStmt),
     For(ForStmt),
+    Function(FunctionStmt),
+    Print(PrintStmt),
+    Return(ReturnStmt),
+    Variable(VariableStmt),
+    While(WhileStmt),
 }
 
 impl StmtKind {
@@ -105,24 +109,16 @@ pub trait StmtVisitor {
     }
 
     fn visit_block(&mut self, stmt: &BlockStmt) -> Self::Output;
-
-    fn visit_expr_stmt(&mut self, stmt: &ExprStmt) -> Self::Output;
-
-    fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output;
-
-    fn visit_variable(&mut self, stmt: &VariableStmt) -> Self::Output;
-
-    fn visit_conditional(&mut self, stmt: &ConditionalStmt) -> Self::Output;
-
-    fn visit_while(&mut self, stmt: &WhileStmt) -> Self::Output;
-
-    fn visit_continue(&mut self, stmt: &ContinueStmt) -> Self::Output;
-
     fn visit_break(&mut self, stmt: &BreakStmt) -> Self::Output;
-
+    fn visit_conditional(&mut self, stmt: &ConditionalStmt) -> Self::Output;
+    fn visit_continue(&mut self, stmt: &ContinueStmt) -> Self::Output;
+    fn visit_expr_stmt(&mut self, stmt: &ExprStmt) -> Self::Output;
     fn visit_for(&mut self, stmt: &ForStmt) -> Self::Output;
-
     fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output;
+    fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output;
+    fn visit_return(&mut self, stmt: &ReturnStmt) -> Self::Output;
+    fn visit_variable(&mut self, stmt: &VariableStmt) -> Self::Output;
+    fn visit_while(&mut self, stmt: &WhileStmt) -> Self::Output;
 }
 
 /// Default walking algorithm for statements
@@ -138,6 +134,7 @@ pub fn walk_stmt<V: StmtVisitor>(stmt: &StmtKind, visitor: &mut V) -> V::Output 
         StmtKind::Break(s) => visitor.visit_break(s),
         StmtKind::For(s) => visitor.visit_for(s),
         StmtKind::Function(s) => visitor.visit_function(s),
+        StmtKind::Return(s) => visitor.visit_return(s),
     }
 }
 
@@ -354,6 +351,35 @@ impl From<BreakStmt> for Stmt {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct ReturnStmt {
+    pub span: Span,
+    pub value: Option<Expr>,
+}
+
+impl ReturnStmt {
+    pub fn new(value: Option<Expr>, span: Span) -> Self {
+        let merged_span = match &value {
+            Some(expr) => span.merge(&expr.span),
+            None => span,
+        };
+
+        Self {
+            span: merged_span,
+            value,
+        }
+    }
+}
+
+impl From<ReturnStmt> for Stmt {
+    fn from(value: ReturnStmt) -> Self {
+        Self {
+            span: value.span,
+            kind: StmtKind::Return(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ForStmt {
     pub span: Span,
     pub initializer: Option<Box<Stmt>>,
@@ -404,7 +430,7 @@ impl From<ForStmt> for Stmt {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct FunctionStmt {
     pub span: Span,
-    pub name: Token,
+    pub name: String,
     pub params: Vec<Token>,
     // FIXME: this should actually be this
     // pub body: BlockStmt,
@@ -412,9 +438,8 @@ pub struct FunctionStmt {
 }
 
 impl FunctionStmt {
-    pub fn new(name: Token, params: Vec<Token>, body: Stmt) -> Self {
-        let param_spans = params.iter().fold(name.span, |acc, e| acc.merge(&e.span));
-        let span = param_spans.merge(&name.span.merge(&body.span));
+    pub fn new(name: String, params: Vec<Token>, body: Stmt) -> Self {
+        let span = params.iter().fold(body.span, |acc, e| acc.merge(&e.span));
 
         Self {
             span,

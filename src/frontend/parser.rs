@@ -233,6 +233,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn return_stmt(&mut self) -> ParserResult<Stmt> {
+        self.consume(TokenKind::Return, "missing return".to_string())?;
+
+        let result = match self.check(&TokenKind::Semicolon) {
+            true => None, // nil
+            false => Some(self.expression()?),
+        };
+
+        self.consume(TokenKind::Semicolon, "missing ; after return".to_string())?;
+
+        Ok(Stmt::return_stmt(result, self.last_span))
+    }
+
     // NOTE: the book reuses this for class methods, but we'll tackle that when we get to it
     fn function_stmt(&mut self) -> ParserResult<Stmt> {
         let name = self
@@ -267,17 +280,10 @@ impl<'a> Parser<'a> {
             TokenKind::RightParen,
             "expected ) after parameters".to_string(),
         )?;
-        // self.consume(
-        //     TokenKind::LeftBrace,
-        //     "expected { before function body".to_string(),
-        // )?;
+
         let body = self.block_stmt()?;
-        // self.consume(
-        //     TokenKind::RightBrace,
-        //     "expected } after function body".to_string(),
-        // )?;
-        //
-        Ok(Stmt::function_stmt(name.clone(), params, body))
+
+        Ok(Stmt::function_stmt(name.lexeme, params, body))
     }
 
     fn call(&mut self) -> ParserResult<Expr> {
@@ -410,6 +416,10 @@ impl<'a> Parser<'a> {
             Some(TokenKind::Continue) => {
                 self.advance();
                 self.continue_stmt()
+            }
+            Some(TokenKind::Return) => {
+                // self.advance();
+                self.return_stmt()
             }
             Some(TokenKind::Break) => {
                 self.advance();
