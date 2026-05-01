@@ -327,7 +327,6 @@ impl ExprVisitor for Interpreter {
         }
 
         // execute body
-        // TODO: drop the result for now. This will need to be revisited for the return statement
         let result = self.visit_stmt(&func.body);
         self.env.end_scope();
 
