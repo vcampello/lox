@@ -77,6 +77,7 @@ impl<'a> Scanner<'a> {
 
                 // slash or comment
                 ('/', Some('/')) => self.handle_comment(),
+                ('/', Some('*')) => self.handle_block_comment(), // add an error production for */
                 ('/', _) => self.add_token(TokenKind::Slash),
 
                 // misc
@@ -171,6 +172,17 @@ impl<'a> Scanner<'a> {
         // consume the next character
         while let Some(c) = self.advance() {
             if c == '\n' {
+                break;
+            }
+        }
+    }
+
+    fn handle_block_comment(&mut self) {
+        // consume the next character
+        while let Some(c) = self.advance() {
+            if c == '*' && matches!(self.chars.peek(), Some('/')) {
+                // consume / too
+                self.advance();
                 break;
             }
         }
