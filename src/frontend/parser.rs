@@ -395,12 +395,9 @@ impl<'a> Parser<'a> {
 
         match self.advance() {
             Some(token) if token.kind == expected => Ok(token),
-            Some(token) => {
-                dbg!(&token);
-                Err(ParserError::expected_token(
-                    message, expected, token.kind, token.span,
-                ))
-            }
+            Some(token) => Err(ParserError::expected_token(
+                message, expected, token.kind, token.span,
+            )),
             None => Err(ParserError::unexpected_eof(message, last_span)),
         }
     }
