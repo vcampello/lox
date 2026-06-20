@@ -101,7 +101,7 @@ impl<'a> Parser<'a> {
                 span: token.span.into(),
                 kind,
             })?;
-            let right = self.or()?;
+            let right = self.and()?;
             expr = Expr::logical(expr, Spanned::new(operator, token.span), right)
         }
 
