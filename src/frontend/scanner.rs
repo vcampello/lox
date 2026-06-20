@@ -179,7 +179,7 @@ impl<'a> Scanner<'a> {
     fn handle_string(&mut self) -> ScannerResult<()> {
         while let Some(c) = self.chars.peek() {
             match c {
-                // Multi-line comment
+                // Multi-line string handling
                 '\n' => self.increase_line(),
                 '"' => break,
                 _ => (),
