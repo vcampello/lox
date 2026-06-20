@@ -346,16 +346,7 @@ impl<'a> Parser<'a> {
                 .parse::<f64>()
                 .map_err(|_| ParserError::invalid_number(token.lexeme.clone(), token.span))
                 .map(|v| Expr::number_literal(v, token.span)),
-            TokenKind::String => {
-                // String lexeme includes quotes, strip them
-                let content = token
-                    .lexeme
-                    .strip_prefix('"')
-                    .and_then(|s| s.strip_suffix('"'))
-                    .unwrap_or(&token.lexeme)
-                    .to_string();
-                Ok(Expr::string_literal(content, token.span))
-            }
+            TokenKind::String => Ok(Expr::string_literal(token.lexeme.clone(), token.span)),
 
             TokenKind::LeftParen => {
                 let expr = self.expression()?; // must be called before consuming

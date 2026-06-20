@@ -138,6 +138,11 @@ impl<'a> Scanner<'a> {
         self.tokens.push(token);
     }
 
+    fn add_sring_token(&mut self, s: String) {
+        let token = Token::new(TokenKind::String, s, self.to_span_all());
+        self.tokens.push(token);
+    }
+
     fn add_token_and_skip(&mut self, token_type: TokenKind, skip_chars: usize) {
         self.add_token(token_type);
 
@@ -189,25 +194,55 @@ impl<'a> Scanner<'a> {
     }
 
     fn handle_string(&mut self) -> ScannerResult<()> {
-        while let Some(c) = self.chars.peek() {
-            match c {
-                // Multi-line string handling
-                '\n' => self.increase_line(),
-                '"' => break,
-                _ => (),
+        // store final string value
+        let mut buf: Vec<char> = Vec::new();
+        while let Some(cur) = self.advance() {
+            match cur {
+                // multi-line string handling
+                '\n' => {
+                    buf.push(cur);
+                    self.increase_line();
+                }
+                // handle escape sequences
+                '\\' if let Some(next) = self.chars.peek() => match next {
+                    // escaped slashes and quotes inside of strings
+                    '"' => {
+                        self.advance();
+                        buf.push('"');
+                    }
+                    '\\' => {
+                        self.advance();
+                        buf.push('\\');
+                    }
+                    // tab
+                    't' => {
+                        self.advance();
+                        buf.push('\t');
+                    }
+                    // newline
+                    'n' => {
+                        self.advance();
+                        buf.push('\n');
+                    }
+                    // carriage return
+                    'r' => {
+                        self.advance();
+                        buf.push('\r');
+                    }
+                    // anything else
+                    _ => buf.push(cur),
+                },
+                // terminate string
+                '"' => {
+                    self.add_sring_token(buf.iter().collect::<String>());
+                    return Ok(());
+                }
+                // append to buffer
+                _ => buf.push(cur),
             };
-            _ = self.advance();
         }
 
-        if self.chars.peek().is_none() {
-            return Err(ScannerError::unterminated_string(self.to_span_single()));
-        }
-
-        // consume closing "
-        self.advance();
-        self.add_token(TokenKind::String);
-
-        Ok(())
+        Err(ScannerError::unterminated_string(self.to_span_single()))
     }
 
     fn handle_number(&mut self) {

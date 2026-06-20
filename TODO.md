@@ -2,15 +2,15 @@
 
 ## Phase 1 — Fix known bugs
 
-- [ ] Fix `or()` right-recursion in `src/frontend/parser.rs:104` — `self.or()` → `self.and()`
-- [ ] Remove `dbg!(&token)` from `src/frontend/parser.rs:400`
-- [ ] Fix misleading comment in `src/frontend/scanner.rs:182` ("Multi-line comment" → multi-line string handling)
+- [x] Fix `or()` right-recursion in `src/frontend/parser.rs:104` — `self.or()` → `self.and()`
+- [x] Remove `dbg!(&token)` from `src/frontend/parser.rs:400`
+- [x] Fix misleading comment in `src/frontend/scanner.rs:182` ("Multi-line comment" → multi-line string handling)
 - [ ] Fix `FunctionStmt.body` type in `src/ast/stmt.rs` — `Box<Stmt>` → `BlockStmt`
 
 ## Phase 2 — Complete scanner
 
-- [ ] Add block comments (`/* ... */`) to `handle_comment` in scanner
-- [ ] Add string escape sequences (`\"`, `\n`, `\t`, `\\`) to `handle_string` in scanner
+- [x] Add block comments (`/* ... */`) to `handle_comment` in scanner
+- [x] Add string escape sequences (`\"`, `\n`, `\t`, `\\`) to `handle_string` in scanner
 
 ## Phase 3 — Port book tests + test harness
 
@@ -48,6 +48,7 @@
 ## Phase 6 — Polish
 
 - [ ] Native functions — `Value::NativeFunction(fn(&[Value]) -> Value)`, add `clock()`
+- [ ] Enhance errors with Rust source location — show file/line where each error was constructed
 - [ ] Remove remaining `TODO`/`FIXME` markers
 - [ ] Consolidate error reporting in `src/main.rs` (two identical blocks)
 - [ ] Stretch: ternary operator (`? :`) — tokens exist, add parser + interpreter support
