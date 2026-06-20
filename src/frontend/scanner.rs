@@ -194,6 +194,8 @@ impl<'a> Scanner<'a> {
     }
 
     fn handle_string(&mut self) -> ScannerResult<()> {
+        // FIXME: for now this will live here, but ideally all the parsing (including numbers)
+        // should live in the parser - ie. the parser should do this from the span
         // store final string value
         let mut buf: Vec<char> = Vec::new();
         while let Some(cur) = self.advance() {
