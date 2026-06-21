@@ -21,7 +21,7 @@
     - Strips expectation comments before running
 - [ ] Add output capture to interpreter — inject a `Write`-based writer replacing `println!`
 - [ ] Add thin wrapper in `Lox` that exposes `run_with_output(source: &str) -> Result<String>`
-- [ ] Clone test files from `github.com/munificent/craftinginterpreters` into `tests/lox_suite/`
+- [ ] Clone test files from `https://github.com/munificent/craftinginterpreters` into `tests/lox_suite/`
 - [ ] Write integration tests that auto-discover `.lox` files under `tests/lox_suite/`
 - [ ] Write project-specific tests for extra features (continue/break, logical operators in README)
 

@@ -109,5 +109,6 @@ print true and "ok";  // ok
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-This project is based on the Lox language specification from [Crafting Interpreters](https://craftinginterpreters.com/).
+This project is based on the Lox language specification from [Crafting Interpreters](https://craftinginterpreters.com/).  
+Tests adapted from the Crafting Interpreters test suite — Copyright (c) 2015 Robert Nystrom, MIT License.
 
