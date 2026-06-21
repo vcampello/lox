@@ -4,7 +4,6 @@ use crate::{
     frontend::{Parser, Scanner},
 };
 
-#[derive(Debug)]
 pub struct Lox {
     interpreter: Interpreter,
 }
@@ -20,7 +19,7 @@ pub type LoxResult<T> = Result<T, LoxError>;
 impl Lox {
     pub fn new() -> Self {
         Self {
-            interpreter: Interpreter::new(),
+            interpreter: Interpreter::with_stdout(),
         }
     }
 

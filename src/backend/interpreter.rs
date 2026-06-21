@@ -1,16 +1,31 @@
+use std::io::{Write, stdout};
+
 use super::*;
 use crate::ast::*;
 
 pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
-#[derive(Debug, Default)]
 pub struct Interpreter {
     env: Env,
+    out: Box<dyn Write>,
+}
+
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::with_stdout()
+    }
 }
 
 impl Interpreter {
-    pub fn new() -> Self {
-        Self { env: Env::new() }
+    pub fn with_stdout() -> Self {
+        Self::with_writer(Box::new(stdout()))
+    }
+
+    pub fn with_writer(w: Box<dyn Write>) -> Self {
+        Self {
+            env: Env::new(),
+            out: w,
+        }
     }
 
     pub fn interpret(&mut self, stmts: &[Stmt]) -> InterpreterResult<()> {
@@ -43,7 +58,8 @@ impl StmtVisitor for Interpreter {
 
     fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output {
         let result = self.visit_expr(&stmt.expr)?;
-        println!("{result}");
+        writeln!(&mut self.out, "{result}")
+            .map_err(|e| RuntimeError::failed_to_write(e.to_string(), stmt.span))?;
         Ok(())
     }
 

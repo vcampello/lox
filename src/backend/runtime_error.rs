@@ -64,6 +64,13 @@ impl RuntimeError {
             kind: RuntimeErrorKind::Return { value },
         }
     }
+
+    pub fn failed_to_write(message: String, span: Span) -> Self {
+        Self {
+            span: span.into(),
+            kind: RuntimeErrorKind::FailedToWrite { message },
+        }
+    }
 }
 
 #[derive(Error, Debug, Diagnostic)]
@@ -88,4 +95,7 @@ pub enum RuntimeErrorKind {
 
     #[error("Incorrect arity. Expected {expected} arguments but received {received}")]
     IncorrectArity { expected: usize, received: usize },
+
+    #[error("Failed to write to output buffer: {message}")]
+    FailedToWrite { message: String },
 }
