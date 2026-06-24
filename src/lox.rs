@@ -3,6 +3,7 @@ use crate::{
     backend::Interpreter,
     frontend::{Parser, Scanner},
 };
+use std::io::{Write, stdout};
 
 pub struct Lox {
     interpreter: Interpreter,
@@ -10,16 +11,20 @@ pub struct Lox {
 
 impl Default for Lox {
     fn default() -> Self {
-        Self::new()
+        Self::with_stdout()
     }
 }
 
 pub type LoxResult<T> = Result<T, LoxError>;
 
 impl Lox {
-    pub fn new() -> Self {
+    pub fn with_stdout() -> Self {
+        Self::with_writer(Box::new(stdout()))
+    }
+
+    pub fn with_writer(w: Box<dyn Write>) -> Self {
         Self {
-            interpreter: Interpreter::with_stdout(),
+            interpreter: Interpreter::with_writer(w),
         }
     }
 

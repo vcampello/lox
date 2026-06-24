@@ -21,7 +21,7 @@ fn main() {
 
 fn run_prompt() {
     println!("Lox REPL");
-    let mut lox = Lox::new();
+    let mut lox = Lox::with_stdout();
 
     let mut buf = String::new();
     let stdin = io::stdin();
@@ -58,7 +58,7 @@ fn run_prompt() {
 }
 
 fn run_file(path: &str) {
-    let mut lox = Lox::new();
+    let mut lox = Lox::with_stdout();
 
     let Ok(source) = fs::read_to_string(path) else {
         eprintln!("Failed to read {path}");
