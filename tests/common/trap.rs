@@ -12,7 +12,7 @@ use std::{cell::RefCell, fmt::Display, io::Write, rc::Rc};
 /// assert_eq!(trap.to_string(), "hello world!\n");
 /// ```
 #[derive(Default, Clone)]
-pub struct Trap(Rc<RefCell<Vec<String>>>);
+pub struct Trap(Rc<RefCell<Vec<u8>>>);
 
 impl Trap {
     pub fn new_runtime() -> (Trap, Lox) {
@@ -23,20 +23,19 @@ impl Trap {
 
 impl Display for Trap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.borrow().join(""))
+        let content = self.0.borrow().to_vec();
+        let s = String::from_utf8(content).expect("failed to capture stdout from interpreter");
+        write!(f, "{s}")
     }
 }
 
 impl Write for Trap {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let s =
-            String::from_utf8(buf.to_owned()).expect("failed to capture stdout from interpreter");
-        self.0.borrow_mut().push(s);
+        self.0.borrow_mut().extend_from_slice(buf);
         Ok(buf.len())
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        self.0.borrow_mut().clear();
         Ok(())
     }
 }
