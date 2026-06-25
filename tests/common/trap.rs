@@ -19,6 +19,10 @@ impl Trap {
         let trap = Trap::default();
         (trap.clone(), Lox::with_writer(Box::new(trap)))
     }
+
+    pub fn to_lines(&self) -> Vec<String> {
+        self.to_string().lines().map(|l| l.to_string()).collect()
+    }
 }
 
 impl Display for Trap {
