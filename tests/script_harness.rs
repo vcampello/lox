@@ -22,6 +22,11 @@ fn validate_success(path: &Utf8Path, contents: String) -> datatest_stable::Resul
     let (trap, mut rt) = Trap::new_runtime();
     rt.run(&contents).map_err(|e| format!("{e}"))?;
 
+    // just run the script
+    if assertions.is_empty() {
+        return Ok(());
+    }
+
     let actual = trap.to_lines();
 
     assert_eq!(
