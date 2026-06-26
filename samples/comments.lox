@@ -1,5 +1,0 @@
-// print "should not print line comment" 
-/* print "should not print single-line block comment" */
-/**
- * print "should not print multi-line block comment"
- */
