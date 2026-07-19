@@ -20,6 +20,7 @@ impl Trap {
         (trap.clone(), Lox::with_writer(Box::new(trap)))
     }
 
+    #[allow(dead_code)] // rust thinks it's unused because of how datatest is setup
     pub fn to_lines(&self) -> Vec<String> {
         self.to_string().lines().map(|l| l.to_string()).collect()
     }
