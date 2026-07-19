@@ -4,7 +4,5 @@
 rust = { version = "latest", components = "rust-analyzer" }
 
 [tasks.test]
-run = '''cargo nextest run'''
-
-[tasks.test-no-fail]
-run = '''cargo nextest run --no-fail-fast'''
+raw = true  # show colours
+run = '''cargo-nextest ntr'''
