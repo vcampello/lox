@@ -44,7 +44,7 @@ datatest_stable::harness! {
 
     // individual files
     { test = validate_success, root = ROOT, pattern = r"^empty_file.lox$" },
-    // { test = validate_success, root = ROOT, pattern = r"^precedence.lox$" },
+    { test = validate_success, root = ROOT, pattern = r"^precedence.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"^unexpected_character.lox$" },
 }
 
