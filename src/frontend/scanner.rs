@@ -1,6 +1,6 @@
 use crate::ast::{Token, TokenKind};
 use crate::{common::Span, frontend::ScannerError};
-use std::{iter::Peekable, str::Chars};
+use std::{iter::Peekable, str::CharIndices};
 
 pub type ScannerResult<T> = Result<T, ScannerError>;
 
@@ -14,7 +14,7 @@ pub struct Scanner<'a> {
     /// for other types:
     /// - https://doc.rust-lang.org/std/iter/trait.Iterator.html#tymethod.next
     /// - https://doc.rust-lang.org/std/iter/trait.FusedIterator.html
-    chars: Peekable<Chars<'a>>,
+    chars: Peekable<CharIndices<'a>>,
 
     // source.len() returns usize and these properties are derived from it
     /// Lexeme start
@@ -35,7 +35,7 @@ impl<'a> Scanner<'a> {
         Self {
             tokens: Vec::new(),
             source,
-            chars: source.chars().peekable(),
+            chars: source.char_indices().peekable(),
             start: 0,
             current: 0,
             line: 0,
@@ -47,7 +47,7 @@ impl<'a> Scanner<'a> {
         // scan each character
         while let Some(char) = self.advance() {
             // Look at the current and next character
-            match (char, self.chars.peek()) {
+            match (char.1, self.chars.peek()) {
                 ('(', _) => self.add_token(TokenKind::LeftParen),
                 (')', _) => self.add_token(TokenKind::RightParen),
                 ('{', _) => self.add_token(TokenKind::LeftBrace),
@@ -60,24 +60,32 @@ impl<'a> Scanner<'a> {
                 ('*', _) => self.add_token(TokenKind::Star),
 
                 // negation
-                ('!', Some('=')) => self.add_token_and_skip(TokenKind::BangEqual, 1),
+                ('!', Some(next)) if next.1 == '=' => {
+                    self.add_token_and_skip(TokenKind::BangEqual, 1)
+                }
                 ('!', _) => self.add_token(TokenKind::Bang),
 
                 // equality
-                ('=', Some('=')) => self.add_token_and_skip(TokenKind::EqualEqual, 1),
+                ('=', Some(next)) if next.1 == '=' => {
+                    self.add_token_and_skip(TokenKind::EqualEqual, 1)
+                }
                 ('=', _) => self.add_token(TokenKind::Equal),
 
                 // greater than
-                ('>', Some('=')) => self.add_token_and_skip(TokenKind::GreaterEqual, 1),
+                ('>', Some(next)) if next.1 == '=' => {
+                    self.add_token_and_skip(TokenKind::GreaterEqual, 1)
+                }
                 ('>', _) => self.add_token(TokenKind::Greater),
 
                 // greater than
-                ('<', Some('=')) => self.add_token_and_skip(TokenKind::LessEqual, 1),
+                ('<', Some(next)) if next.1 == '=' => {
+                    self.add_token_and_skip(TokenKind::LessEqual, 1)
+                }
                 ('<', _) => self.add_token(TokenKind::Less),
 
                 // slash or comment
-                ('/', Some('/')) => self.handle_comment(),
-                ('/', Some('*')) => self.handle_block_comment(), // add an error production for */
+                ('/', Some(next)) if next.1 == '/' => self.handle_comment(),
+                ('/', Some(next)) if next.1 == '*' => self.handle_block_comment(), // add an error production for */
                 ('/', _) => self.add_token(TokenKind::Slash),
 
                 // misc
@@ -155,28 +163,30 @@ impl<'a> Scanner<'a> {
     }
 
     /// Consume current character. Increases character index if next() is Some(_)
-    fn advance(&mut self) -> Option<char> {
-        let c = self.chars.next();
-
+    /// Returns the char index and character (supports utf-8)
+    fn advance(&mut self) -> Option<(usize, char)> {
         // prevent out of bound lookups when indexing the source array
-        if c.is_some() {
-            self.current += 1;
-            self.col += 1;
+        match self.chars.next() {
+            Some(cur) => {
+                // always increment indexes by 1 locations start from 1
+                self.col += cur.0 - self.current + 1;
+                self.current = cur.0 + 1;
+                Some(cur)
+            }
+            None => None,
         }
-
-        c
     }
 
     fn consume_digits(&mut self) {
-        while matches!(self.chars.peek(), Some(c) if c.is_ascii_digit()) {
+        while matches!(self.chars.peek(), Some(next) if next.1.is_ascii_digit()) {
             self.advance();
         }
     }
 
     fn handle_comment(&mut self) {
         // consume the next character
-        while let Some(c) = self.advance() {
-            if c == '\n' {
+        while let Some(cur) = self.advance() {
+            if cur.1 == '\n' {
                 break;
             }
         }
@@ -184,8 +194,8 @@ impl<'a> Scanner<'a> {
 
     fn handle_block_comment(&mut self) {
         // consume the next character
-        while let Some(c) = self.advance() {
-            if c == '*' && matches!(self.chars.peek(), Some('/')) {
+        while let Some(cur) = self.advance() {
+            if cur.1 == '*' && matches!(self.chars.peek(), Some(next) if next.1 =='/') {
                 // consume / too
                 self.advance();
                 break;
@@ -199,14 +209,14 @@ impl<'a> Scanner<'a> {
         // store final string value
         let mut buf: Vec<char> = Vec::new();
         while let Some(cur) = self.advance() {
-            match cur {
+            match cur.1 {
                 // multi-line string handling
                 '\n' => {
-                    buf.push(cur);
+                    buf.push(cur.1);
                     self.increase_line();
                 }
                 // handle escape sequences
-                '\\' if let Some(next) = self.chars.peek() => match next {
+                '\\' if let Some(next) = self.chars.peek() => match next.1 {
                     // escaped slashes and quotes inside of strings
                     '"' => {
                         self.advance();
@@ -232,7 +242,7 @@ impl<'a> Scanner<'a> {
                         buf.push('\r');
                     }
                     // anything else
-                    _ => buf.push(cur),
+                    _ => buf.push(cur.1),
                 },
                 // terminate string
                 '"' => {
@@ -240,7 +250,7 @@ impl<'a> Scanner<'a> {
                     return Ok(());
                 }
                 // append to buffer
-                _ => buf.push(cur),
+                _ => buf.push(cur.1),
             };
         }
 
@@ -262,7 +272,7 @@ impl<'a> Scanner<'a> {
 
         // check if the current and next characters are the fractional part of a number -e.g. `.9`
         match (peek_1st, peek_2nd) {
-            (Some(c), Some(next)) if *c == '.' && next.is_ascii_digit() => {
+            (Some(cur), Some(next)) if cur.1 == '.' && next.1.is_ascii_digit() => {
                 // consume '.'
                 self.advance();
 
@@ -277,7 +287,7 @@ impl<'a> Scanner<'a> {
 
     fn handle_identifier_and_keywords(&mut self) {
         // extract the entire identifier before categorising it. See maximal munch
-        while matches!(self.chars.peek(), Some(c) if Scanner::is_identifier(c)) {
+        while matches!(self.chars.peek(), Some(cur) if Scanner::is_identifier(&cur.1)) {
             self.advance();
         }
 

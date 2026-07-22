@@ -17,7 +17,7 @@ datatest_stable::harness! {
     // { test = validate_success, root = ROOT, pattern = r"call/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"class/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"closure/.*\.lox$" },
-    // { test = validate_success, root = ROOT, pattern = r"comments/.*\.lox$" },
+    { test = validate_success, root = ROOT, pattern = r"comments/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"constructor/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"expressions/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"field/.*\.lox$" },
