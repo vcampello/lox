@@ -75,27 +75,27 @@ impl RuntimeError {
 
 #[derive(Error, Debug, Diagnostic)]
 pub enum RuntimeErrorKind {
-    #[error("Invalid {operation} operation")]
+    #[error("invalid {operation} operation")]
     InvalidOperation { operation: String },
 
-    #[error("Undefined variable '{name}'")]
+    #[error("undefined variable '{name}'")]
     UndefinedVariable { name: String },
 
-    #[error("Continue")]
+    #[error("continue")]
     Continue,
 
-    #[error("Break")]
+    #[error("creak")]
     Break,
 
-    #[error("Return {value}")]
+    #[error("return {value}")]
     Return { value: Value },
 
-    #[error("Not callable")]
+    #[error("not callable")]
     NotCallable,
 
-    #[error("Incorrect arity. Expected {expected} arguments but received {received}")]
+    #[error("incorrect arity. Expected {expected} arguments but received {received}")]
     IncorrectArity { expected: usize, received: usize },
 
-    #[error("Failed to write to output buffer: {message}")]
+    #[error("failed to write to output buffer: {message}")]
     FailedToWrite { message: String },
 }

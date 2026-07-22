@@ -30,7 +30,7 @@ datatest_stable::harness! {
     // { test = validate_success, root = ROOT, pattern = r"method/.*\.lox$" },
     { test = validate_success, root = ROOT, pattern = r"nil/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"number/.*\.lox$" },
-    // { test = validate_success, root = ROOT, pattern = r"operator/.*\.lox$" },
+    { test = validate_success, root = ROOT, pattern = r"operator/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"print/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"regression/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"return/.*\.lox$" },

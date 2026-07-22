@@ -6,7 +6,7 @@ use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("Syntax error")]
+#[error("syntax error")]
 pub enum SyntaxError {
     // pass through diagnostics
     #[diagnostic(transparent)]
@@ -44,10 +44,10 @@ impl ScannerError {
 
 #[derive(Error, Debug, Clone)]
 pub enum ScannerErrorKind {
-    #[error("Unterminated string")]
+    #[error("unterminated string")]
     UnterminatedString,
 
-    #[error("Unexpected character {0}")]
+    #[error("unexpected character {0}")]
     UnexpectedCharacter(char),
 }
 
@@ -125,31 +125,31 @@ impl ParserError {
 
 #[derive(Error, Debug)]
 pub enum ParserErrorKind {
-    #[error("Expected token {expected} but found {found}: {message}")]
+    #[error("expected token {expected} but found {found}: {message}")]
     ExpectedToken {
         expected: TokenKind,
         found: TokenKind,
         message: String,
     },
 
-    #[error("Unexpected EOF: {message}")]
+    #[error("unexpected EOF: {message}")]
     UnexpectedEof { message: String },
 
-    #[error("Expected expression")]
+    #[error("expected expression")]
     ExpectedExpression,
 
-    #[error("Invalid number: {lexeme} ")]
+    #[error("invalid number: {lexeme} ")]
     InvalidNumber { lexeme: String },
 
-    #[error("Invalid assignment to {token_kind}")]
+    #[error("invalid assignment to {token_kind}")]
     InvalidAssignmentTarget { token_kind: TokenKind },
 
-    #[error("Invalid {operation} operator: {token_kind}")]
+    #[error("invalid {operation} operator: {token_kind}")]
     InvalidOperator {
         operation: &'static str,
         token_kind: TokenKind,
     },
 
-    #[error("Exceeded {max_args} arguments")]
+    #[error("exceeded {max_args} arguments")]
     TooManyArguments { max_args: usize },
 }
