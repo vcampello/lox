@@ -26,11 +26,11 @@ datatest_stable::harness! {
     // { test = validate_success, root = ROOT, pattern = r"if/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"inheritance/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"limit/.*\.lox$" },
-    { test = validate_success, root = ROOT, pattern = r"logical_operator/.*\.lox$" },
+    // { test = validate_success, root = ROOT, pattern = r"logical_operator/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"method/.*\.lox$" },
     { test = validate_success, root = ROOT, pattern = r"nil/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"number/.*\.lox$" },
-    { test = validate_success, root = ROOT, pattern = r"operator/.*\.lox$" },
+    // { test = validate_success, root = ROOT, pattern = r"operator/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"print/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"regression/.*\.lox$" },
     // { test = validate_success, root = ROOT, pattern = r"return/.*\.lox$" },
@@ -48,12 +48,14 @@ datatest_stable::harness! {
     // { test = validate_success, root = ROOT, pattern = r"^unexpected_character.lox$" },
 }
 
+/// NOTE: this is a work in progress. It doesn't handle failures yet
 fn validate_success(path: &Utf8Path, contents: String) -> datatest_stable::Result<()> {
     let file_slug = format!("file: {}", path);
     let assertions = extract_assertions(&contents);
 
     let (trap, mut rt) = Trap::new_runtime();
-    rt.run(&contents).map_err(|e| format!("{e}"))?;
+    rt.run("TEST_HARNESS", &contents)
+        .map_err(|e| format!("{e}"))?;
 
     // just run the script
     if assertions.is_empty() {

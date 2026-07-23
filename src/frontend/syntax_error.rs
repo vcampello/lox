@@ -5,7 +5,7 @@ use crate::{ast::TokenKind, common::Span};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
-#[derive(Error, Debug, Diagnostic)]
+#[derive(Error, Clone, Debug, Diagnostic)]
 #[error("syntax error")]
 pub enum SyntaxError {
     // pass through diagnostics
@@ -17,7 +17,7 @@ pub enum SyntaxError {
     Parser(#[from] ParserError),
 }
 
-#[derive(Error, Debug, Diagnostic)]
+#[derive(Error, Clone, Debug, Diagnostic)]
 #[error("{kind}")]
 pub struct ScannerError {
     pub kind: ScannerErrorKind,
@@ -51,7 +51,7 @@ pub enum ScannerErrorKind {
     UnexpectedCharacter(char),
 }
 
-#[derive(Error, Debug, Diagnostic)]
+#[derive(Error, Clone, Debug, Diagnostic)]
 #[error("{kind}")]
 pub struct ParserError {
     pub kind: ParserErrorKind,
@@ -123,7 +123,7 @@ impl ParserError {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Clone, Debug)]
 pub enum ParserErrorKind {
     #[error("expected token {expected} but found {found}: {message}")]
     ExpectedToken {

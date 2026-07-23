@@ -5,7 +5,7 @@ use crate::{
 use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error, Debug, Diagnostic)]
+#[derive(Clone, Error, Debug, Diagnostic)]
 pub enum LoxError {
     #[error(transparent)]
     #[diagnostic(transparent)]
@@ -14,6 +14,19 @@ pub enum LoxError {
     #[error("runtime error")]
     #[diagnostic(transparent)]
     Runtime(#[from] RuntimeError),
+}
+
+impl LoxError {
+    pub fn flatten(&self) -> String {
+        format!(
+            "{}: {}",
+            self,
+            match self {
+                LoxError::Runtime(e) => e.to_string(),
+                LoxError::Syntax(e) => e.to_string(),
+            }
+        )
+    }
 }
 
 // -----------------------------------------------------------------------------

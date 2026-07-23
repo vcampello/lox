@@ -7,7 +7,7 @@ pub type InterpreterResult<T> = Result<T, RuntimeError>;
 
 pub struct Interpreter {
     env: Env,
-    out: Box<dyn Write>,
+    stdout: Box<dyn Write>,
 }
 
 impl Default for Interpreter {
@@ -21,10 +21,10 @@ impl Interpreter {
         Self::with_writer(Box::new(stdout()))
     }
 
-    pub fn with_writer(w: Box<dyn Write>) -> Self {
+    pub fn with_writer(stdout: Box<dyn Write>) -> Self {
         Self {
             env: Env::new(),
-            out: w,
+            stdout,
         }
     }
 
@@ -34,6 +34,12 @@ impl Interpreter {
         }
 
         Ok(())
+    }
+
+    /// TODO: this will be removed once print is moved to the standard library
+    fn writeln(&mut self, message: &str) {
+        writeln!(self.stdout, "{message}")
+            .expect("failed to write to stdout - this should never fail");
     }
 }
 
@@ -56,10 +62,10 @@ impl StmtVisitor for Interpreter {
         Ok(())
     }
 
+    /// TODO: this will be removed once print is moved to the standard library
     fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output {
         let result = self.visit_expr(&stmt.expr)?;
-        writeln!(&mut self.out, "{result}")
-            .map_err(|e| RuntimeError::failed_to_write(e.to_string(), stmt.span))?;
+        self.writeln(&result.to_string());
         Ok(())
     }
 

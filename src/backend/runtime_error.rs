@@ -6,7 +6,7 @@ use crate::common::Span;
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
-#[derive(Error, Debug, Diagnostic)]
+#[derive(Clone, Error, Debug, Diagnostic)]
 #[error("{kind}")]
 pub struct RuntimeError {
     pub kind: RuntimeErrorKind,
@@ -73,7 +73,7 @@ impl RuntimeError {
     }
 }
 
-#[derive(Error, Debug, Diagnostic)]
+#[derive(Clone, Error, Debug, Diagnostic)]
 pub enum RuntimeErrorKind {
     #[error("invalid {operation} operation")]
     InvalidOperation { operation: String },

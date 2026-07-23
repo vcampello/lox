@@ -115,6 +115,7 @@ pub trait StmtVisitor {
     fn visit_expr_stmt(&mut self, stmt: &ExprStmt) -> Self::Output;
     fn visit_for(&mut self, stmt: &ForStmt) -> Self::Output;
     fn visit_function(&mut self, stmt: &FunctionStmt) -> Self::Output;
+    /// TODO: this will be removed once print is moved to the standard library
     fn visit_print(&mut self, stmt: &PrintStmt) -> Self::Output;
     fn visit_return(&mut self, stmt: &ReturnStmt) -> Self::Output;
     fn visit_variable(&mut self, stmt: &VariableStmt) -> Self::Output;

@@ -1,11 +1,9 @@
+use lox::Lox;
 use std::{
     env, fs,
     io::{self, Write},
     process,
 };
-
-use lox::Lox;
-use miette::{NamedSource, Report};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -33,18 +31,14 @@ fn run_prompt() {
         match stdin.read_line(&mut buf) {
             Ok(0) => break, // EOL
             Ok(_) => {
-                let source = &buf.trim();
+                let src = &buf.trim();
 
                 // no-op on  whitespace
-                if source.is_empty() {
+                if src.is_empty() {
                     continue;
                 }
 
-                // TODO: consolidate the reporter. There's a lot more work to be done
-                if let Err(error) = lox.run(source) {
-                    let source_code = NamedSource::new("REPL", source.to_string());
-                    eprintln!("{:?}", Report::new(error).with_source_code(source_code));
-                }
+                let _ = lox.run("REPL", src);
             }
             Err(e) => {
                 eprintln!("REPL error: {e}");
@@ -65,11 +59,7 @@ fn run_file(path: &str) {
         process::exit(65)
     };
 
-    // TODO: consolidate the reporter. There's a lot more work to be done
-    if let Err(error) = lox.run(&source) {
-        let source_code = NamedSource::new(path, source.to_string());
-        eprintln!("{:?}", Report::new(error).with_source_code(source_code));
+    if lox.run(path, &source).is_err() {
         process::exit(65);
     }
-    // Chapter 7 adds something along the lines of `had_runtime_error` => exit(70)
 }
